@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chatbot di Assistenza Clienti di A Mano A Mano</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+      font-size: 25px;
+    }
+    #chat-container {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      overflow-y: auto;
+      max-height: 80vh;
+    }
+    .message {
+      margin-bottom: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      box-sizing: border-box;
+      word-wrap: break-word;
+      font-size: 15px;
+    }
+    .message.user {
+      background-color: #d1e7dd;
+      align-self: flex-end;
+    }
+    .message.assistant {
+      background-color: #e9ecef;
+      align-self: flex-start;
+    }
+    .button-container {
+      display: flex;
+      flex-direction: column;
+      margin-top: 10px;
+    }
+    .button-container button {
+      padding: 10px;
+      margin-top: 5px;
+      border: none;
+      background-color: #007bff;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    .button-container button:hover {
+      background-color: #0056b3;
+    }
+    .button-container button.disabled {
+      background-color: #f0f0f0;
+      color: #999;
+      cursor: not-allowed;
+    }
+    .typing-indicator {
+      font-style: italic;
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 20px;
+      }
+      .message {
+        font-size: 15px;
+      }
+      .button-container button {
+        font-size: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Chatbot di Assistenza Clienti di A Mano A Mano</h1>
+  <div id="chat-container">
+    <div id="typing-indicator" class="typing-indicator" style="display: none;">Rino sta scrivendo<span id="dots"></span></div>
+  </div>
+
+  <script>
+    let dotsInterval;
+    let conversationContext = [];
+    const PROXY_URL = 'https://chic-sfogliatella-500e8a.netlify.app/.netlify/functions/cors-proxy'; // Cambia con l'URL della tua funzione Netlify
+
+    document.addEventListener('DOMContentLoaded', () => {
+      startConversation();
+    });
+
+    async function startConversation() {
+      const message = "Ciao! Sono Rino l'assistente super fico di A Mano A Mano... Come posso aiutarti oggi?";
+      const options = [
+        { text: "Informazioni Generali", value: "1.1" },
+        { text: "Informazioni sull'app", value: "1.2" }
+      ];
+      addMessageToChat(message, 'assistant', options);
+    }
+
+    function sendMessage(option) {
+      const message = option.textContent;
+      const value = option.value;
+      const typingIndicator = document.getElementById('typing-indicator');
+      const dots = document.getElementById('dots');
+
+      // Aggiungi il messaggio dell'utente al contesto e alla chat
+      conversationContext.push(value);
+      console.log('User selection:', value); // Logging user selection
+      addMessageToChat(message, 'user');
+
+      // Disabilita i pulsanti precedenti
+      const buttons = document.querySelectorAll('.button-container button');
+      buttons.forEach(button => {
+        button.classList.add('disabled');
+        button.disabled = true;
+      });
+
+      // Mostra l'indicatore di scrittura
+      typingIndicator.style.display = 'block';
+      let dotsCount = 0;
+      dotsInterval = setInterval(() => {
+        dotsCount = (dotsCount + 1) % 4;
+        dots.innerHTML = '.'.repeat(dotsCount);
+      }, 500);
+
+      setTimeout(() => {
+        clearInterval(dotsInterval);
+        typingIndicator.style.display = 'none';
+
+        // Aggiungi la logica per le risposte del chatbot qui
+        handleUserResponse(value);
+      }, 2000);
+    }
+
+    function handleUserResponse(value) {
+      let message = '';
+      let options = [];
+
+      switch (value) {
+        case '1.1':
+          message = "Ecco alcune informazioni generali. Cos'altro vuoi sapere?";
+          options = [
+            { text: "Orari di apertura", value: "1.1.1" },
+            { text: "Contatti", value: "1.1.2" }
+          ];
+          break;
+        case '1.1.1':
+          message = "Siamo aperti tutti i giorni dalle 19 alle 23. Festivi compresi.";
+          addMessageToChat(message, 'assistant');
+          setTimeout(() => {
+            handleUserResponse('2.0');
+          }, 500);
+          return;
+        case '1.1.2':
+          message = "Ecco i nostri contatti.";
+          addMessageToChat(message, 'assistant');
+          setTimeout(() => {
+            handleUserResponse('2.0');
+          }, 500);
+          return;
+        case '1.2':
+          message = "Ecco alcune informazioni sull'app. Cos'altro vuoi sapere?";
+          options = [
+            { text: "Come scaricare l'app", value: "1.2.1" },
+            { text: "Funzionalità dell'app", value: "1.2.2" }
+          ];
+          break;
+        case '1.2.1':
+          message = "Puoi scaricare l'app dal nostro sito web o dagli app store.";
+          addMessageToChat(message, 'assistant');
+          setTimeout(() => {
+            handleUserResponse('2.0');
+          }, 500);
+          return;
+        case '1.2.2':
+          message = "L'app offre una varietà di funzionalità per migliorare la tua esperienza.";
+          addMessageToChat(message, 'assistant');
+          setTimeout(() => {
+            handleUserResponse('2.0');
+          }, 500);
+          return;
+        case '2.0':
+          message = "Posso fare altro per te?";
+          options = [
+            { text: "Sì", value: "2.1" },
+            { text: "No", value: "2.2" }
+          ];
+          break;
+        case '2.1':
+          startConversation();
+          return;
+        case '2.2':
+          message = "Grazie per aver utilizzato il nostro servizio!";
+          addMessageToChat(message, 'assistant');
+          const buttonContainer = document.createElement('div');
+          buttonContainer.classList.add('button-container');
+          const appButton = document.createElement('button');
+          appButton.textContent = "Vai all'app";
+          appButton.onclick = () => window.location.href = 'https://wbpp.it/o/?898';
+          buttonContainer.appendChild(appButton);
+          document.getElementById('chat-container').appendChild(buttonContainer);
+
+          // Salva le risposte dell'utente quando termina la conversazione
+          saveUserResponses();
+          return;
+      }
+
+      addMessageToChat(message, 'assistant', options);
+    }
+
+    function addMessageToChat(message, sender, options = []) {
+      const chatContainer = document.getElementById('chat-container');
+      const messageDiv = document.createElement('div');
+      messageDiv.classList.add('message', sender);
+      messageDiv.textContent = message;
+      chatContainer.appendChild(messageDiv);
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+
+      if (options.length > 0) {
+        const buttonContainer = document.createElement('div');
+        buttonContainer.classList.add('button-container');
+
+        options.forEach(option => {
+          const button = document.createElement('button');
+          button.textContent = option.text;
+          button.value = option.value;
+          button.onclick = () => sendMessage(button);
+          buttonContainer.appendChild(button);
+        });
+
+        chatContainer.appendChild(buttonContainer);
+      }
+    }
+
+    function saveUserResponses() {
+      const data = {
+        responses: conversationContext
+      };
+
+      console.log('Data to be sent:', data); // Logging data to be sent
+      fetch(PROXY_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log('Success:', data);
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+      });
+    }
+  </script>
+</body>
+</html>
