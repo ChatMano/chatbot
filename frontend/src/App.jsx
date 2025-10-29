@@ -76,6 +76,18 @@ function App() {
     setShowForm(true)
   }
 
+  const handleTestLocale = async (localeId) => {
+    if (!confirm('Vuoi eseguire un test di download per questo locale?')) return
+
+    try {
+      const response = await axios.post(`${API_URL}/locali/${localeId}/test`)
+      alert(`Test avviato!\n${response.data.message}\n\nNota: Questa è una funzione dimostrativa. Il test completo verrà implementato con GitHub Actions.`)
+      await loadData()
+    } catch (err) {
+      alert('Errore nell\'avvio del test: ' + (err.response?.data?.error || err.message))
+    }
+  }
+
   const handleCloseForm = () => {
     setShowForm(false)
     setEditingLocale(null)
@@ -132,6 +144,7 @@ function App() {
             locali={locali}
             onEdit={handleEditLocale}
             onDelete={handleDeleteLocale}
+            onTest={handleTestLocale}
           />
         </div>
       </div>

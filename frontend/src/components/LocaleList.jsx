@@ -1,6 +1,6 @@
 import LocaleCard from './LocaleCard'
 
-function LocaleList({ locali, onEdit, onDelete }) {
+function LocaleList({ locali, onEdit, onDelete, onTest }) {
   if (locali.length === 0) {
     return (
       <div className="empty-state">
@@ -18,6 +18,7 @@ function LocaleList({ locali, onEdit, onDelete }) {
           locale={locale}
           onEdit={() => onEdit(locale)}
           onDelete={() => onDelete(locale.id)}
+          onTest={() => onTest(locale.id)}
         />
       ))}
     </div>

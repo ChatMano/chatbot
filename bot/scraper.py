@@ -125,6 +125,61 @@ class DashboardScraper:
             print(f"Errore durante il login: {e}")
             return False
 
+    def unlock_secret_popup(self) -> bool:
+        """
+        Apre il popup segreto e inserisce il codice
+
+        Returns:
+            True se il popup viene sbloccato con successo, False altrimenti
+        """
+        try:
+            selectors = self.config.get_selectors()
+
+            # Clicca 3 volte sul footer per aprire il popup segreto
+            print("Apertura popup segreto (3 click sul footer)...")
+            footer_element = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, '#wrapper > div.content-page > footer > div'))
+            )
+
+            # Esegui 3 click
+            for i in range(3):
+                footer_element.click()
+                time.sleep(0.3)
+                print(f"Click {i+1}/3")
+
+            # Attendi che il popup appaia
+            time.sleep(1)
+            print("Popup aperto!")
+
+            # Inserisci il codice segreto
+            print("Inserimento codice segreto...")
+            secret_code_field = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '#modal-training > div.modal-dialog > div > div.modal-body > div input'))
+            )
+            secret_code_field.clear()
+            secret_code_field.send_keys('123456')
+
+            time.sleep(1)
+            print("Codice segreto inserito con successo")
+
+            # Cerca e clicca il pulsante di conferma del popup (se esiste)
+            try:
+                confirm_button = self.driver.find_element(By.CSS_SELECTOR, '#modal-training button[type="submit"]')
+                confirm_button.click()
+                print("Popup confermato")
+                time.sleep(2)
+            except:
+                print("Nessun pulsante di conferma trovato (normale)")
+
+            return True
+
+        except TimeoutException:
+            print("Errore: Timeout durante l'apertura del popup segreto")
+            return False
+        except Exception as e:
+            print(f"Errore durante l'apertura del popup segreto: {e}")
+            return False
+
     def navigate_to_download_page(self) -> bool:
         """
         Naviga alla pagina di download
@@ -216,6 +271,11 @@ class DashboardScraper:
             # Login
             if not self.login(username, password):
                 print("Login fallito")
+                return None
+
+            # Sblocca il popup segreto
+            if not self.unlock_secret_popup():
+                print("Sblocco popup segreto fallito")
                 return None
 
             # Naviga alla pagina di download

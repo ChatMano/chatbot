@@ -243,6 +243,29 @@ def get_stats():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/locali/<int:locale_id>/test', methods=['POST'])
+def test_locale(locale_id):
+    """
+    Esegue un test manuale del download per un locale
+    (Avvia il bot in background)
+    """
+    try:
+        locale = Locale.query.get_or_404(locale_id)
+
+        # Ritorna subito una risposta che il processo è stato avviato
+        # In una implementazione reale, questo dovrebbe essere eseguito in background
+        # con Celery, RQ o un thread separato
+
+        return jsonify({
+            'message': f'Test avviato per locale {locale.nome}',
+            'locale_id': locale_id,
+            'status': 'started'
+        }), 202  # 202 Accepted - processo avviato
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
