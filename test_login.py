@@ -41,8 +41,21 @@ def test_login():
     chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
     chrome_options.add_experimental_option('useAutomationExtension', False)
 
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=chrome_options)
+    try:
+        # Prova a scaricare/installare ChromeDriver con gestione errori migliorata
+        from webdriver_manager.chrome import ChromeDriverManager
+        from webdriver_manager.core.os_manager import ChromeType
+
+        print("Download ChromeDriver in corso...")
+        driver_path = ChromeDriverManager().install()
+        print(f"ChromeDriver installato in: {driver_path}")
+        service = Service(driver_path)
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+    except Exception as e:
+        print(f"Errore con webdriver-manager: {e}")
+        print("\nProvo senza Service...")
+        # Fallback: prova senza specificare il service
+        driver = webdriver.Chrome(options=chrome_options)
     wait = WebDriverWait(driver, 15)
 
     try:
