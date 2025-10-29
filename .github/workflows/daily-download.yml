@@ -1,0 +1,52 @@
+name: iPratico Daily Download
+
+on:
+  # Esegui ogni giorno alle 23:00 UTC (01:00 ora italiana)
+  schedule:
+    - cron: '0 23 * * *'
+
+  # Permetti esecuzione manuale
+  workflow_dispatch:
+
+jobs:
+  download-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Create credentials.json from secret
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
+
+      - name: Run iPratico bot
+        env:
+          IPRATICO_USERNAME: ${{ secrets.IPRATICO_USERNAME }}
+          IPRATICO_PASSWORD: ${{ secrets.IPRATICO_PASSWORD }}
+          IPRATICO_PIN: ${{ secrets.IPRATICO_PIN }}
+          IPRATICO_LOCALE_SELECTOR: ${{ secrets.IPRATICO_LOCALE_SELECTOR }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+        run: |
+          python run_bot.py
+
+      - name: Clean up credentials
+        if: always()
+        run: |
+          rm -f credentials.json
+          rm -f downloads/*.xls
