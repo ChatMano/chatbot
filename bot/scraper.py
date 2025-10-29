@@ -4,15 +4,18 @@ Modulo per il bot Selenium che naviga nella dashboard e scarica i file Excel
 import os
 import time
 import glob
+from datetime import datetime, timedelta
 from typing import Optional
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
+import pytz
 
 from .config_manager import ConfigManager
 from .auth import AuthManager
@@ -277,6 +280,74 @@ class DashboardScraper:
             print("Continuo con il locale di default...")
             return True  # Non fallisce, continua con default
 
+    def set_date_filter(self) -> bool:
+        """
+        Imposta il filtro data al giorno precedente (formato DD/MM/YYYY, timezone Roma)
+
+        Returns:
+            True se l'impostazione ha successo, False altrimenti
+        """
+        try:
+            selectors = self.config.get_selectors()
+            nav_config = self.config.get_navigation_config()
+
+            # Calcola la data di ieri nel timezone di Roma
+            rome_tz = pytz.timezone('Europe/Rome')
+            now_rome = datetime.now(rome_tz)
+            yesterday = now_rome - timedelta(days=1)
+            date_str = yesterday.strftime('%d/%m/%Y')
+
+            print(f"Impostazione filtro data a: {date_str}...")
+
+            # Click sul filtro data per aprire il date picker
+            print("Apertura date picker...")
+            date_filter = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('date_filter_trigger')))
+            )
+            date_filter.click()
+            time.sleep(1)
+            print("✓ Date picker aperto")
+
+            # Imposta la data di inizio
+            print(f"Impostazione data inizio: {date_str}...")
+            date_start_input = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selectors.get('date_start_input')))
+            )
+            date_start_input.clear()
+            date_start_input.send_keys(date_str)
+            time.sleep(0.5)
+            print("✓ Data inizio impostata")
+
+            # Imposta la data di fine (stesso giorno)
+            print(f"Impostazione data fine: {date_str}...")
+            date_end_input = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selectors.get('date_end_input')))
+            )
+            date_end_input.clear()
+            date_end_input.send_keys(date_str)
+            time.sleep(0.5)
+            print("✓ Data fine impostata")
+
+            # Click sul pulsante Applica
+            print("Conferma selezione date...")
+            apply_button = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('date_apply_button')))
+            )
+            apply_button.click()
+
+            wait_time = nav_config.get('wait_after_date_select', 2)
+            time.sleep(wait_time)
+            print("✓ Filtro data applicato")
+
+            return True
+
+        except TimeoutException:
+            print("Errore: Timeout durante l'impostazione del filtro data")
+            return False
+        except Exception as e:
+            print(f"Errore durante l'impostazione del filtro data: {e}")
+            return False
+
     def trigger_data_update(self) -> bool:
         """
         Clicca sul pulsante di aggiornamento dati
@@ -382,43 +453,49 @@ class DashboardScraper:
             username, password = self.auth.get_credentials()
 
             # 1. Login
-            print("\n[1/7] LOGIN")
+            print("\n[1/8] LOGIN")
             if not self.login(username, password):
                 print("❌ Login fallito")
                 return None
 
             # 2. Sblocca il popup segreto con PIN
-            print("\n[2/7] SBLOCCO POPUP SEGRETO")
+            print("\n[2/8] SBLOCCO POPUP SEGRETO")
             if not self.unlock_secret_popup(pin):
                 print("❌ Sblocco popup segreto fallito")
                 return None
 
             # 3. Naviga ai menu
-            print("\n[3/7] NAVIGAZIONE MENU")
+            print("\n[3/8] NAVIGAZIONE MENU")
             if not self.navigate_to_reports_page():
                 print("❌ Navigazione menu fallita")
                 return None
 
             # 4. Seleziona locale (opzionale)
-            print("\n[4/7] SELEZIONE LOCALE")
+            print("\n[4/8] SELEZIONE LOCALE")
             if not self.select_locale(locale_selector):
                 print("❌ Selezione locale fallita")
                 return None
 
-            # 5. Click aggiornamento dati
-            print("\n[5/7] AGGIORNAMENTO DATI")
+            # 5. Imposta filtro data
+            print("\n[5/8] IMPOSTAZIONE FILTRO DATA")
+            if not self.set_date_filter():
+                print("❌ Impostazione filtro data fallita")
+                return None
+
+            # 6. Click aggiornamento dati
+            print("\n[6/8] AGGIORNAMENTO DATI")
             if not self.trigger_data_update():
                 print("❌ Aggiornamento dati fallito")
                 return None
 
-            # 6. Download file XLSX
-            print("\n[6/7] DOWNLOAD FILE EXCEL")
+            # 7. Download file XLSX
+            print("\n[7/8] DOWNLOAD FILE EXCEL")
             downloaded_file = self.download_excel_file()
             if not downloaded_file:
                 print("❌ Download fallito")
                 return None
 
-            print("\n[7/7] COMPLETATO!")
+            print("\n[8/8] COMPLETATO!")
             print("\n" + "="*60)
             print("✓✓✓ PROCESSO COMPLETATO CON SUCCESSO ✓✓✓")
             print("="*60 + "\n")

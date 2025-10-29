@@ -14,6 +14,10 @@
     "menu_main": "#sidebar-menu > ul > li:nth-child(1) > a",
     "menu_submenu": "#sidebar-menu > ul > li:nth-child(1) > ul > li:nth-child(9) > a",
     "locale_dropdown_button": "#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(1) > div > button",
+    "date_filter_trigger": "#filtro-data",
+    "date_start_input": "body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.calendar.left > div.daterangepicker_input > input",
+    "date_end_input": "body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.calendar.right > div.daterangepicker_input > input",
+    "date_apply_button": "body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.ranges > div > button.applyBtn.btn.btn-sm.btn-success",
     "aggiornamento_dati_button": "#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(4) > button",
     "download_xlsx_button": "#ToolTables_employeeProductOrdered_0"
   },
@@ -22,6 +26,7 @@
     "wait_after_pin": 2,
     "wait_after_menu_click": 2,
     "wait_after_locale_select": 2,
+    "wait_after_date_select": 2,
     "wait_after_aggiornamento": 3,
     "wait_for_download": 10,
     "max_retries": 3,

@@ -3,13 +3,16 @@
 Script di test per verificare il login sulla dashboard iPratico
 """
 import time
+from datetime import datetime, timedelta
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+import pytz
 
 from bot.config_manager import ConfigManager
 from bot.auth import AuthManager
@@ -288,6 +291,57 @@ def test_login():
                 locale_dropdown.click()
                 time.sleep(1)
                 print("✓ Dropdown chiuso")
+
+                # Impostazione filtro data
+                print("\n" + "="*60)
+                print("IMPOSTAZIONE FILTRO DATA")
+                print("="*60)
+
+                # Calcola la data di ieri nel timezone di Roma
+                rome_tz = pytz.timezone('Europe/Rome')
+                now_rome = datetime.now(rome_tz)
+                yesterday = now_rome - timedelta(days=1)
+                date_str = yesterday.strftime('%d/%m/%Y')
+
+                print(f"\nData da impostare: {date_str}")
+
+                # Click sul filtro data per aprire il date picker
+                print("\nClick sul filtro data...")
+                date_filter = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#filtro-data'))
+                )
+                date_filter.click()
+                time.sleep(1)
+                print("✓ Date picker aperto")
+
+                # Imposta la data di inizio
+                print(f"\nImpostazione data inizio: {date_str}...")
+                date_start_input = wait.until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.calendar.left > div.daterangepicker_input > input'))
+                )
+                date_start_input.clear()
+                date_start_input.send_keys(date_str)
+                time.sleep(0.5)
+                print("✓ Data inizio impostata")
+
+                # Imposta la data di fine (stesso giorno)
+                print(f"\nImpostazione data fine: {date_str}...")
+                date_end_input = wait.until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, 'body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.calendar.right > div.daterangepicker_input > input'))
+                )
+                date_end_input.clear()
+                date_end_input.send_keys(date_str)
+                time.sleep(0.5)
+                print("✓ Data fine impostata")
+
+                # Click sul pulsante Applica
+                print("\nConferma selezione date...")
+                apply_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, 'body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.ranges > div > button.applyBtn.btn.btn-sm.btn-success'))
+                )
+                apply_button.click()
+                time.sleep(2)
+                print("✓ Filtro data applicato")
 
                 # Aggiornamento dati
                 print("\n" + "="*60)
