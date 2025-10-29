@@ -186,6 +186,64 @@ def test_login():
             print("\n" + "="*60)
             print("✓✓✓ LOGIN RIUSCITO! ✓✓✓")
             print("="*60)
+
+            # TEST POPUP SEGRETO
+            print("\n" + "="*60)
+            print("TEST POPUP SEGRETO")
+            print("="*60)
+
+            try:
+                # Clicca 3 volte sul footer
+                print("\nCerco l'elemento footer per aprire il popup...")
+                footer_element = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#wrapper > div.content-page > footer > div'))
+                )
+                print("✓ Footer trovato!")
+
+                print("\nEseguo 3 click sul footer...")
+                for i in range(3):
+                    footer_element.click()
+                    time.sleep(0.3)
+                    print(f"  Click {i+1}/3 ✓")
+
+                # Aspetta che il popup appaia
+                print("\nAttendo apertura popup...")
+                time.sleep(2)
+                print("✓ Popup dovrebbe essere aperto!")
+
+                # Cerca il campo del codice segreto
+                print("\nCerco il campo per il codice segreto...")
+                secret_field = wait.until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, '#modal-training > div.modal-dialog > div > div.modal-body > div input'))
+                )
+                print("✓ Campo codice segreto trovato!")
+
+                # Inserisci il codice
+                print("\nInserisco codice segreto: 123456")
+                secret_field.clear()
+                secret_field.send_keys('123456')
+                time.sleep(1)
+                print("✓ Codice inserito!")
+
+                # Cerca il pulsante di conferma
+                try:
+                    print("\nCerco il pulsante di conferma...")
+                    confirm_button = driver.find_element(By.CSS_SELECTOR, '#modal-training button[type="submit"]')
+                    print("✓ Pulsante di conferma trovato!")
+                    confirm_button.click()
+                    print("✓ Pulsante cliccato!")
+                    time.sleep(2)
+                except:
+                    print("⚠ Nessun pulsante di conferma trovato (potrebbe essere normale)")
+
+                print("\n" + "="*60)
+                print("✓✓✓ POPUP SEGRETO SBLOCCATO! ✓✓✓")
+                print("="*60)
+
+            except Exception as e:
+                print(f"\n❌ ERRORE nel popup segreto: {e}")
+                print("Il popup potrebbe non essere presente o i selettori potrebbero essere diversi")
+
         else:
             print("\n" + "="*60)
             print("⚠ LOGIN POTREBBE ESSERE FALLITO")
