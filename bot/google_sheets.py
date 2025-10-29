@@ -27,7 +27,7 @@ class GoogleSheetsUploader:
         self.client = None
         self.credentials = None
 
-    def authenticate_service_account(self, credentials_file: str = 'service-account.json') -> bool:
+    def authenticate_service_account(self, credentials_file: str = 'credentials.json') -> bool:
         """
         Autentica usando un Service Account (consigliato per automazione)
 
