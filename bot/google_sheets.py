@@ -145,7 +145,18 @@ class GoogleSheetsUploader:
 
             # Leggi il file Excel
             print(f"Lettura file Excel: {excel_file}")
-            df = pd.read_excel(excel_file, sheet_name=0)
+
+            # Determina l'engine corretto in base all'estensione
+            file_ext = os.path.splitext(excel_file)[1].lower()
+            if file_ext == '.xls':
+                # Vecchio formato Excel (97-2003) richiede xlrd
+                df = pd.read_excel(excel_file, sheet_name=0, engine='xlrd')
+            elif file_ext == '.xlsx':
+                # Nuovo formato Excel richiede openpyxl
+                df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
+            else:
+                # Prova senza specificare l'engine
+                df = pd.read_excel(excel_file, sheet_name=0)
 
             # Apri il Google Sheet
             print(f"Apertura Google Sheet: {sheet_id}")
