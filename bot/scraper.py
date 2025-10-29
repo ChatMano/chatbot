@@ -125,51 +125,57 @@ class DashboardScraper:
             print(f"Errore durante il login: {e}")
             return False
 
-    def unlock_secret_popup(self) -> bool:
+    def unlock_secret_popup(self, pin: str = '123456') -> bool:
         """
-        Apre il popup segreto e inserisce il codice
+        Apre il popup segreto e inserisce il codice PIN
+
+        Args:
+            pin: Il codice PIN da inserire (default: 123456)
 
         Returns:
             True se il popup viene sbloccato con successo, False altrimenti
         """
         try:
             selectors = self.config.get_selectors()
+            nav_config = self.config.get_navigation_config()
 
-            # Clicca 3 volte sul footer per aprire il popup segreto
-            print("Apertura popup segreto (3 click sul footer)...")
+            # Clicca N volte sul footer per aprire il popup segreto
+            clicks = nav_config.get('secret_popup_clicks', 3)
+            print(f"Apertura popup segreto ({clicks} click sul footer)...")
             footer_element = self.wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, '#wrapper > div.content-page > footer > div'))
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('secret_popup_trigger')))
             )
 
-            # Esegui 3 click
-            for i in range(3):
+            # Esegui i click
+            for i in range(clicks):
                 footer_element.click()
                 time.sleep(0.3)
-                print(f"Click {i+1}/3")
+                print(f"Click {i+1}/{clicks}")
 
             # Attendi che il popup appaia
             time.sleep(1)
             print("Popup aperto!")
 
-            # Inserisci il codice segreto
-            print("Inserimento codice segreto...")
-            secret_code_field = self.wait.until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, '#modal-training > div.modal-dialog > div > div.modal-body > div input'))
+            # Inserisci il PIN
+            print(f"Inserimento PIN: {pin}...")
+            secret_pin_field = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selectors.get('secret_pin_field')))
             )
-            secret_code_field.clear()
-            secret_code_field.send_keys('123456')
+            secret_pin_field.clear()
+            secret_pin_field.send_keys(pin)
+            time.sleep(0.5)
+            print("PIN inserito!")
 
-            time.sleep(1)
-            print("Codice segreto inserito con successo")
+            # Click sul pulsante di conferma
+            print("Click sul pulsante di conferma...")
+            confirm_button = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('secret_pin_confirm')))
+            )
+            confirm_button.click()
 
-            # Cerca e clicca il pulsante di conferma del popup (se esiste)
-            try:
-                confirm_button = self.driver.find_element(By.CSS_SELECTOR, '#modal-training button[type="submit"]')
-                confirm_button.click()
-                print("Popup confermato")
-                time.sleep(2)
-            except:
-                print("Nessun pulsante di conferma trovato (normale)")
+            wait_time = nav_config.get('wait_after_pin', 2)
+            time.sleep(wait_time)
+            print("Popup confermato e sbloccato!")
 
             return True
 
@@ -180,25 +186,117 @@ class DashboardScraper:
             print(f"Errore durante l'apertura del popup segreto: {e}")
             return False
 
-    def navigate_to_download_page(self) -> bool:
+    def navigate_to_reports_page(self) -> bool:
         """
-        Naviga alla pagina di download
+        Naviga alla pagina dei report tramite i menu
 
         Returns:
             True se la navigazione ha successo, False altrimenti
         """
         try:
-            dashboard_config = self.config.get_dashboard_config()
-            download_url = dashboard_config.get('download_page_url')
+            selectors = self.config.get_selectors()
+            nav_config = self.config.get_navigation_config()
 
-            print(f"Navigazione alla pagina di download: {download_url}")
-            self.driver.get(download_url)
-            time.sleep(2)
+            # Click sul menu principale
+            print("Click sul menu principale...")
+            menu_main = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('menu_main')))
+            )
+            menu_main.click()
+            time.sleep(nav_config.get('wait_after_menu_click', 2))
+            print("✓ Menu principale aperto")
+
+            # Click sul sottomenu
+            print("Click sul sottomenu...")
+            menu_submenu = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('menu_submenu')))
+            )
+            menu_submenu.click()
+            time.sleep(nav_config.get('wait_after_menu_click', 2))
+            print("✓ Sottomenu aperto - pagina report caricata")
 
             return True
 
+        except TimeoutException:
+            print("Errore: Timeout durante la navigazione ai menu")
+            return False
         except Exception as e:
             print(f"Errore durante la navigazione: {e}")
+            return False
+
+    def select_locale(self, locale_selector: Optional[str] = None) -> bool:
+        """
+        Seleziona un locale specifico se presente
+
+        Args:
+            locale_selector: Selettore CSS per il locale specifico (opzionale)
+
+        Returns:
+            True se la selezione ha successo o non è necessaria, False altrimenti
+        """
+        try:
+            selectors = self.config.get_selectors()
+            nav_config = self.config.get_navigation_config()
+
+            if not locale_selector:
+                print("⚠ Nessun selettore locale specificato - uso locale di default")
+                return True
+
+            # Click sul dropdown per aprire la lista locali
+            print("Apertura dropdown selezione locale...")
+            locale_dropdown = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('locale_dropdown_button')))
+            )
+            locale_dropdown.click()
+            time.sleep(1)
+            print("✓ Dropdown locale aperto")
+
+            # Click sul locale specifico
+            print(f"Selezione locale con selettore: {locale_selector}")
+            locale_option = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, locale_selector))
+            )
+            locale_option.click()
+            time.sleep(nav_config.get('wait_after_locale_select', 2))
+            print("✓ Locale selezionato")
+
+            return True
+
+        except TimeoutException:
+            print("Errore: Timeout durante la selezione del locale")
+            print("Continuo con il locale di default...")
+            return True  # Non fallisce, continua con default
+        except Exception as e:
+            print(f"Errore durante la selezione del locale: {e}")
+            print("Continuo con il locale di default...")
+            return True  # Non fallisce, continua con default
+
+    def trigger_data_update(self) -> bool:
+        """
+        Clicca sul pulsante di aggiornamento dati
+
+        Returns:
+            True se il click ha successo, False altrimenti
+        """
+        try:
+            selectors = self.config.get_selectors()
+            nav_config = self.config.get_navigation_config()
+
+            print("Click su 'Aggiornamento dati'...")
+            aggiornamento_button = self.wait.until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('aggiornamento_dati_button')))
+            )
+            aggiornamento_button.click()
+            time.sleep(nav_config.get('wait_after_aggiornamento', 3))
+            print("✓ Aggiornamento dati completato")
+
+            return True
+
+        except TimeoutException:
+            print("Errore: Timeout durante l'aggiornamento dati")
+            return False
+        except Exception as e:
+            print(f"Errore durante l'aggiornamento dati: {e}")
             return False
 
     def download_excel_file(self) -> Optional[str]:
@@ -216,12 +314,13 @@ class DashboardScraper:
             download_path = self.config.get_download_path()
             before_files = set(glob.glob(os.path.join(download_path, "*")))
 
-            # Clicca sul pulsante di download
-            print("Click sul pulsante di download...")
+            # Clicca sul pulsante di download XLSX
+            print("Click sul pulsante di download XLSX...")
             download_button = self.wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('download_button')))
+                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('download_xlsx_button')))
             )
             download_button.click()
+            print("✓ Click effettuato sul download")
 
             # Attendi il completamento del download
             wait_time = nav_config.get('wait_for_download', 10)
@@ -254,42 +353,76 @@ class DashboardScraper:
             self.driver.quit()
             print("Browser chiuso")
 
-    def run(self) -> Optional[str]:
+    def run(self, pin: str = '123456', locale_selector: Optional[str] = None) -> Optional[str]:
         """
         Esegue l'intero processo: setup, login, navigazione e download
+
+        Args:
+            pin: PIN per sbloccare il popup segreto (default: 123456)
+            locale_selector: Selettore CSS per il locale specifico (opzionale)
 
         Returns:
             Path del file scaricato se il processo ha successo, None altrimenti
         """
         try:
+            print("\n" + "="*60)
+            print("AVVIO BOT - PROCESSO COMPLETO")
+            print("="*60 + "\n")
+
             # Setup del driver
             self.setup_driver()
 
             # Ottieni le credenziali
             username, password = self.auth.get_credentials()
 
-            # Login
+            # 1. Login
+            print("\n[1/7] LOGIN")
             if not self.login(username, password):
-                print("Login fallito")
+                print("❌ Login fallito")
                 return None
 
-            # Sblocca il popup segreto
-            if not self.unlock_secret_popup():
-                print("Sblocco popup segreto fallito")
+            # 2. Sblocca il popup segreto con PIN
+            print("\n[2/7] SBLOCCO POPUP SEGRETO")
+            if not self.unlock_secret_popup(pin):
+                print("❌ Sblocco popup segreto fallito")
                 return None
 
-            # Naviga alla pagina di download
-            if not self.navigate_to_download_page():
-                print("Navigazione alla pagina di download fallita")
+            # 3. Naviga ai menu
+            print("\n[3/7] NAVIGAZIONE MENU")
+            if not self.navigate_to_reports_page():
+                print("❌ Navigazione menu fallita")
                 return None
 
-            # Scarica il file
+            # 4. Seleziona locale (opzionale)
+            print("\n[4/7] SELEZIONE LOCALE")
+            if not self.select_locale(locale_selector):
+                print("❌ Selezione locale fallita")
+                return None
+
+            # 5. Click aggiornamento dati
+            print("\n[5/7] AGGIORNAMENTO DATI")
+            if not self.trigger_data_update():
+                print("❌ Aggiornamento dati fallito")
+                return None
+
+            # 6. Download file XLSX
+            print("\n[6/7] DOWNLOAD FILE EXCEL")
             downloaded_file = self.download_excel_file()
+            if not downloaded_file:
+                print("❌ Download fallito")
+                return None
+
+            print("\n[7/7] COMPLETATO!")
+            print("\n" + "="*60)
+            print("✓✓✓ PROCESSO COMPLETATO CON SUCCESSO ✓✓✓")
+            print("="*60 + "\n")
 
             return downloaded_file
 
         except Exception as e:
-            print(f"Errore durante l'esecuzione del bot: {e}")
+            print(f"\n❌ ERRORE durante l'esecuzione del bot: {e}")
+            import traceback
+            traceback.print_exc()
             return None
         finally:
             self.close()
