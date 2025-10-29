@@ -163,9 +163,9 @@ class GoogleSheetsUploader:
                 # Il file è HTML con una tabella - usa read_html
                 try:
                     print("  Tentativo lettura come tabella HTML...")
-                    # Usa encoding corretto per caratteri italiani
-                    # header=0 usa la prima riga come nomi delle colonne
-                    dfs = pd.read_html(excel_file, encoding='utf-8', thousands=None, decimal=',', header=0)
+                    # Leggi tutte le tabelle HTML senza interpretare header
+                    # header=None: NON interpretare nessuna riga come header, copia tutto così com'è
+                    dfs = pd.read_html(excel_file, encoding='utf-8', thousands=None, decimal=',', header=None)
 
                     if not dfs or len(dfs) == 0:
                         raise Exception("Nessuna tabella trovata nel file HTML")
@@ -182,6 +182,7 @@ class GoogleSheetsUploader:
 
                     df = dfs[best_table_idx]
                     print(f"  ✓ Selezionata tabella #{best_table_idx} ({len(df)} righe, {len(df.columns)} colonne)")
+                    print(f"  ℹ Dati copiati esattamente come nell'HTML originale (nessuna interpretazione)")
 
                 except Exception as e:
                     print(f"  ✗ Lettura HTML fallita: {e}")
@@ -236,8 +237,8 @@ class GoogleSheetsUploader:
                 worksheet.clear()
 
             # Prepara i dati per Google Sheets
-            # Includi l'header
-            data = [df.columns.tolist()] + df.values.tolist()
+            # Copia esattamente i dati così come sono (senza aggiungere header extra)
+            data = df.values.tolist()
 
             # Converti eventuali NaN in stringhe vuote
             data = [['' if pd.isna(cell) else cell for cell in row] for row in data]
