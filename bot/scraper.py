@@ -257,8 +257,14 @@ class DashboardScraper:
                 EC.element_to_be_clickable((By.CSS_SELECTOR, locale_selector))
             )
             locale_option.click()
-            time.sleep(nav_config.get('wait_after_locale_select', 2))
+            time.sleep(1)
             print("✓ Locale selezionato")
+
+            # Chiudi il dropdown per evitare che copra altri elementi
+            print("Chiusura dropdown...")
+            locale_dropdown.click()
+            time.sleep(nav_config.get('wait_after_locale_select', 2))
+            print("✓ Dropdown chiuso")
 
             return True
 

@@ -280,8 +280,14 @@ def test_login():
                     EC.element_to_be_clickable((By.CSS_SELECTOR, '#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(1) > div > ul > li:nth-child(3) > a > label'))
                 )
                 locale_option.click()
-                time.sleep(2)
+                time.sleep(1)
                 print("✓ Locale selezionato")
+
+                # Chiudi il dropdown cliccando di nuovo sul pulsante
+                print("\nChiusura dropdown...")
+                locale_dropdown.click()
+                time.sleep(1)
+                print("✓ Dropdown chiuso")
 
                 # Aggiornamento dati
                 print("\n" + "="*60)
