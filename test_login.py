@@ -226,23 +226,97 @@ def test_login():
                 print("✓ Codice inserito!")
 
                 # Cerca il pulsante di conferma
-                try:
-                    print("\nCerco il pulsante di conferma...")
-                    confirm_button = driver.find_element(By.CSS_SELECTOR, '#modal-training button[type="submit"]')
-                    print("✓ Pulsante di conferma trovato!")
-                    confirm_button.click()
-                    print("✓ Pulsante cliccato!")
-                    time.sleep(2)
-                except:
-                    print("⚠ Nessun pulsante di conferma trovato (potrebbe essere normale)")
+                print("\nCerco il pulsante di conferma...")
+                confirm_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#modal-training > div.modal-dialog > div > div.modal-footer > button.btn.btn-success.btn-attiva-pin'))
+                )
+                print("✓ Pulsante di conferma trovato!")
+                confirm_button.click()
+                print("✓ Pulsante cliccato!")
+                time.sleep(2)
 
                 print("\n" + "="*60)
                 print("✓✓✓ POPUP SEGRETO SBLOCCATO! ✓✓✓")
                 print("="*60)
 
+                # CONTINUA CON LA NAVIGAZIONE
+                print("\n" + "="*60)
+                print("NAVIGAZIONE AI MENU")
+                print("="*60)
+
+                # Click menu principale
+                print("\nClick sul menu principale...")
+                menu_main = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#sidebar-menu > ul > li:nth-child(1) > a'))
+                )
+                menu_main.click()
+                time.sleep(2)
+                print("✓ Menu principale aperto")
+
+                # Click sottomenu
+                print("\nClick sul sottomenu...")
+                menu_submenu = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#sidebar-menu > ul > li:nth-child(1) > ul > li:nth-child(9) > a'))
+                )
+                menu_submenu.click()
+                time.sleep(2)
+                print("✓ Sottomenu aperto")
+
+                # Selezione locale
+                print("\n" + "="*60)
+                print("SELEZIONE LOCALE - PIZZERIA VENETA")
+                print("="*60)
+
+                print("\nClick sul dropdown locale...")
+                locale_dropdown = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(1) > div > button'))
+                )
+                locale_dropdown.click()
+                time.sleep(1)
+                print("✓ Dropdown aperto")
+
+                print("\nSelezione Pizzeria Veneta...")
+                locale_option = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(1) > div > ul > li:nth-child(3) > a > label'))
+                )
+                locale_option.click()
+                time.sleep(2)
+                print("✓ Locale selezionato")
+
+                # Aggiornamento dati
+                print("\n" + "="*60)
+                print("AGGIORNAMENTO DATI")
+                print("="*60)
+
+                print("\nClick su 'Aggiornamento dati'...")
+                aggiornamento_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(4) > button'))
+                )
+                aggiornamento_button.click()
+                time.sleep(3)
+                print("✓ Aggiornamento completato")
+
+                # Download XLSX
+                print("\n" + "="*60)
+                print("DOWNLOAD XLSX")
+                print("="*60)
+
+                print("\nClick sul pulsante download XLSX...")
+                download_button = wait.until(
+                    EC.element_to_be_clickable((By.CSS_SELECTOR, '#ToolTables_employeeProductOrdered_0'))
+                )
+                download_button.click()
+                print("✓ Download avviato!")
+
+                print("\n" + "="*60)
+                print("✓✓✓ PROCESSO COMPLETO ESEGUITO! ✓✓✓")
+                print("="*60)
+                print("\nControlla se il file è stato scaricato nella cartella Downloads!")
+
             except Exception as e:
-                print(f"\n❌ ERRORE nel popup segreto: {e}")
-                print("Il popup potrebbe non essere presente o i selettori potrebbero essere diversi")
+                print(f"\n❌ ERRORE: {e}")
+                import traceback
+                traceback.print_exc()
 
         else:
             print("\n" + "="*60)
