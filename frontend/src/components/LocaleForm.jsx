@@ -5,6 +5,7 @@ function LocaleForm({ locale, onSubmit, onClose }) {
     nome: locale?.nome || '',
     username: locale?.username || '',
     password: '',
+    pin: '',
     orario_esecuzione: locale?.orario_esecuzione || '03:00',
     google_sheet_id: locale?.google_sheet_id || '',
     locale_selector: locale?.locale_selector || '',
@@ -28,10 +29,13 @@ function LocaleForm({ locale, onSubmit, onClose }) {
       return
     }
 
-    // Se è una modifica e la password è vuota, non inviarla
+    // Se è una modifica e la password/pin sono vuoti, non inviarli
     const dataToSubmit = { ...formData }
     if (locale && !dataToSubmit.password) {
       delete dataToSubmit.password
+    }
+    if (locale && !dataToSubmit.pin) {
+      delete dataToSubmit.pin
     }
 
     onSubmit(dataToSubmit)
@@ -86,6 +90,23 @@ function LocaleForm({ locale, onSubmit, onClose }) {
               placeholder="••••••••"
               required={!locale}
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="pin">
+              PIN iPratico {locale ? '(lascia vuoto per non modificare)' : '(opzionale)'}
+            </label>
+            <input
+              type="text"
+              id="pin"
+              name="pin"
+              value={formData.pin}
+              onChange={handleChange}
+              placeholder="Es: 123456"
+            />
+            <small style={{ color: '#666', fontSize: '0.85rem' }}>
+              PIN per sbloccare il popup segreto di iPratico (es. 123456)
+            </small>
           </div>
 
           <div className="form-group">

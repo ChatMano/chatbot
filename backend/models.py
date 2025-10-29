@@ -22,6 +22,7 @@ class Locale(db.Model):
     nome = db.Column(db.String(200), nullable=False, unique=True)
     username = db.Column(db.String(200), nullable=False)
     password_encrypted = db.Column(db.Text, nullable=False)
+    pin_encrypted = db.Column(db.Text, nullable=True)  # PIN opzionale per iPratico
     orario_esecuzione = db.Column(db.String(5), nullable=False, default='03:00')  # HH:MM format
     google_sheet_id = db.Column(db.String(200), nullable=False)
     locale_selector = db.Column(db.String(500), nullable=True)  # Selettore per identificare il locale su iPratico

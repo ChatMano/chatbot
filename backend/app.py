@@ -84,11 +84,17 @@ def create_locale():
         # Cifra la password
         password_encrypted = crypto.encrypt(data['password'])
 
+        # Cifra il PIN se presente
+        pin_encrypted = None
+        if data.get('pin'):
+            pin_encrypted = crypto.encrypt(data['pin'])
+
         # Crea il locale
         locale = Locale(
             nome=data['nome'],
             username=data['username'],
             password_encrypted=password_encrypted,
+            pin_encrypted=pin_encrypted,
             orario_esecuzione=data['orario_esecuzione'],
             google_sheet_id=data['google_sheet_id'],
             locale_selector=data.get('locale_selector'),
@@ -125,6 +131,12 @@ def update_locale(locale_id):
 
         if 'password' in data:
             locale.password_encrypted = crypto.encrypt(data['password'])
+
+        if 'pin' in data:
+            if data['pin']:  # Se il PIN è presente, cifralo
+                locale.pin_encrypted = crypto.encrypt(data['pin'])
+            else:  # Se il PIN è vuoto, rimuovilo
+                locale.pin_encrypted = None
 
         if 'orario_esecuzione' in data:
             locale.orario_esecuzione = data['orario_esecuzione']
@@ -171,9 +183,15 @@ def get_locale_credentials(locale_id):
         # Decifra la password
         password = crypto.decrypt(locale.password_encrypted)
 
+        # Decifra il PIN se presente
+        pin = None
+        if locale.pin_encrypted:
+            pin = crypto.decrypt(locale.pin_encrypted)
+
         return jsonify({
             'username': locale.username,
             'password': password,
+            'pin': pin,
             'locale_selector': locale.locale_selector
         }), 200
 
