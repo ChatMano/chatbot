@@ -423,6 +423,19 @@ class DashboardScraper:
 
             if new_files:
                 downloaded_file = list(new_files)[0]
+
+                # Verifica che il file non sia HTML (errore comune)
+                try:
+                    with open(downloaded_file, 'rb') as f:
+                        first_bytes = f.read(10)
+                        if first_bytes.startswith(b'<html') or first_bytes.startswith(b'<!DOCTYPE'):
+                            print(f"⚠ ATTENZIONE: Il file scaricato è HTML, non Excel!")
+                            print(f"   Questo significa che il download non è avvenuto correttamente.")
+                            print(f"   Il pulsante potrebbe richiedere più tempo o un'azione diversa.")
+                            return None
+                except Exception as e:
+                    print(f"Avviso: impossibile verificare il contenuto del file: {e}")
+
                 print(f"File scaricato con successo: {downloaded_file}")
                 return downloaded_file
             else:
