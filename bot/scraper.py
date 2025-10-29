@@ -391,7 +391,20 @@ class DashboardScraper:
             download_path = self.config.get_download_path()
             before_files = set(glob.glob(os.path.join(download_path, "*")))
 
-            # Clicca sul pulsante di download XLSX
+            # Trova il pulsante di download XLSX
+            print("Ricerca pulsante di download XLSX...")
+            download_button = self.wait.until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, selectors.get('download_xlsx_button')))
+            )
+            print("✓ Pulsante trovato")
+
+            # Scrolla fino all'elemento per renderlo visibile
+            print("Scroll fino al pulsante...")
+            self.driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", download_button)
+            time.sleep(1)
+            print("✓ Elemento visibile")
+
+            # Attendi che sia cliccabile e clicca
             print("Click sul pulsante di download XLSX...")
             download_button = self.wait.until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('download_xlsx_button')))

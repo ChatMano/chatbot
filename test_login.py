@@ -361,6 +361,18 @@ def test_login():
                 print("DOWNLOAD XLSX")
                 print("="*60)
 
+                print("\nRicerca pulsante download XLSX...")
+                download_button = wait.until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, '#ToolTables_employeeProductOrdered_0'))
+                )
+                print("✓ Pulsante trovato")
+
+                # Scrolla fino all'elemento per renderlo visibile
+                print("\nScroll fino al pulsante...")
+                driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", download_button)
+                time.sleep(1)
+                print("✓ Elemento visibile")
+
                 print("\nClick sul pulsante download XLSX...")
                 download_button = wait.until(
                     EC.element_to_be_clickable((By.CSS_SELECTOR, '#ToolTables_employeeProductOrdered_0'))
