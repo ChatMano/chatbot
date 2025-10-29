@@ -146,35 +146,61 @@ class GoogleSheetsUploader:
             # Leggi il file Excel
             print(f"Lettura file Excel: {excel_file}")
 
-            # Determina l'engine corretto in base all'estensione
-            # A volte i file hanno estensione sbagliata, quindi prova multipli engine
-            file_ext = os.path.splitext(excel_file)[1].lower()
+            # Verifica prima se è un file HTML mascherato da Excel
+            is_html = False
+            try:
+                with open(excel_file, 'r', encoding='utf-8') as f:
+                    first_line = f.readline().strip()
+                    if first_line.startswith('<html') or first_line.startswith('<!DOCTYPE'):
+                        is_html = True
+                        print("  ℹ File rilevato come HTML (tabella HTML esportata)")
+            except:
+                pass
+
             df = None
 
-            if file_ext == '.xls':
-                # Prova prima xlrd per vecchio formato Excel (97-2003)
+            if is_html:
+                # Il file è HTML con una tabella - usa read_html
                 try:
-                    print("  Tentativo lettura con engine xlrd...")
-                    df = pd.read_excel(excel_file, sheet_name=0, engine='xlrd')
-                    print("  ✓ Lettura con xlrd riuscita")
+                    print("  Tentativo lettura come tabella HTML...")
+                    dfs = pd.read_html(excel_file)
+                    if dfs and len(dfs) > 0:
+                        df = dfs[0]  # Prendi la prima tabella
+                        print(f"  ✓ Lettura HTML riuscita ({len(df)} righe, {len(df.columns)} colonne)")
+                    else:
+                        raise Exception("Nessuna tabella trovata nel file HTML")
                 except Exception as e:
-                    print(f"  ✗ xlrd fallito ({str(e)[:50]}), provo openpyxl...")
-                    try:
-                        # Potrebbe essere un .xlsx mascherato da .xls
-                        df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
-                        print("  ✓ Lettura con openpyxl riuscita (file .xlsx mascherato da .xls)")
-                    except Exception as e2:
-                        print(f"  ✗ openpyxl fallito ({str(e2)[:50]})")
-                        raise Exception(f"Impossibile leggere il file Excel: {e}")
-            elif file_ext == '.xlsx':
-                # Nuovo formato Excel richiede openpyxl
-                df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
+                    print(f"  ✗ Lettura HTML fallita: {e}")
+                    raise Exception(f"Impossibile leggere la tabella HTML: {e}")
             else:
-                # Prova senza specificare l'engine
-                df = pd.read_excel(excel_file, sheet_name=0)
+                # Determina l'engine corretto in base all'estensione
+                # A volte i file hanno estensione sbagliata, quindi prova multipli engine
+                file_ext = os.path.splitext(excel_file)[1].lower()
+
+                if file_ext == '.xls':
+                    # Prova prima xlrd per vecchio formato Excel (97-2003)
+                    try:
+                        print("  Tentativo lettura con engine xlrd...")
+                        df = pd.read_excel(excel_file, sheet_name=0, engine='xlrd')
+                        print("  ✓ Lettura con xlrd riuscita")
+                    except Exception as e:
+                        print(f"  ✗ xlrd fallito ({str(e)[:50]}), provo openpyxl...")
+                        try:
+                            # Potrebbe essere un .xlsx mascherato da .xls
+                            df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
+                            print("  ✓ Lettura con openpyxl riuscita (file .xlsx mascherato da .xls)")
+                        except Exception as e2:
+                            print(f"  ✗ openpyxl fallito ({str(e2)[:50]})")
+                            raise Exception(f"Impossibile leggere il file Excel: {e}")
+                elif file_ext == '.xlsx':
+                    # Nuovo formato Excel richiede openpyxl
+                    df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
+                else:
+                    # Prova senza specificare l'engine
+                    df = pd.read_excel(excel_file, sheet_name=0)
 
             if df is None:
-                raise Exception("Impossibile leggere il file Excel")
+                raise Exception("Impossibile leggere il file")
 
             # Apri il Google Sheet
             print(f"Apertura Google Sheet: {sheet_id}")
