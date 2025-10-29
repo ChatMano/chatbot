@@ -412,35 +412,63 @@ class DashboardScraper:
             download_button.click()
             print("✓ Click effettuato sul download")
 
-            # Attendi il completamento del download
-            wait_time = nav_config.get('wait_for_download', 10)
-            print(f"Attesa completamento download ({wait_time} secondi)...")
-            time.sleep(wait_time)
+            # Attendi che il file inizi a scaricarsi
+            print("Attesa inizio download...")
+            max_wait_start = 10  # Massimo 10 secondi per iniziare
+            downloaded_file = None
 
-            # Trova il nuovo file scaricato
-            after_files = set(glob.glob(os.path.join(download_path, "*")))
-            new_files = after_files - before_files
+            for i in range(max_wait_start):
+                time.sleep(1)
+                after_files = set(glob.glob(os.path.join(download_path, "*")))
+                new_files = after_files - before_files
+                if new_files:
+                    downloaded_file = list(new_files)[0]
+                    print(f"✓ File trovato: {os.path.basename(downloaded_file)}")
+                    break
 
-            if new_files:
-                downloaded_file = list(new_files)[0]
-
-                # Verifica che il file non sia HTML (errore comune)
-                try:
-                    with open(downloaded_file, 'rb') as f:
-                        first_bytes = f.read(10)
-                        if first_bytes.startswith(b'<html') or first_bytes.startswith(b'<!DOCTYPE'):
-                            print(f"⚠ ATTENZIONE: Il file scaricato è HTML, non Excel!")
-                            print(f"   Questo significa che il download non è avvenuto correttamente.")
-                            print(f"   Il pulsante potrebbe richiedere più tempo o un'azione diversa.")
-                            return None
-                except Exception as e:
-                    print(f"Avviso: impossibile verificare il contenuto del file: {e}")
-
-                print(f"File scaricato con successo: {downloaded_file}")
-                return downloaded_file
-            else:
+            if not downloaded_file:
                 print("Errore: Nessun nuovo file trovato nella directory di download")
                 return None
+
+            # Aspetta che il file sia completamente scaricato
+            print("Attesa completamento download...")
+            max_wait_complete = 30  # Massimo 30 secondi per completare
+            last_size = -1
+            stable_count = 0
+
+            for i in range(max_wait_complete):
+                time.sleep(1)
+                try:
+                    current_size = os.path.getsize(downloaded_file)
+                    if current_size == last_size:
+                        stable_count += 1
+                        if stable_count >= 3:  # 3 secondi senza cambiamenti
+                            print(f"✓ Download completato ({current_size} bytes)")
+                            break
+                    else:
+                        stable_count = 0
+                        last_size = current_size
+                        print(f"  Download in corso... ({current_size} bytes)")
+                except:
+                    pass
+
+            # Verifica che il file HTML sia completo (se è HTML)
+            try:
+                with open(downloaded_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+                    if content.startswith('<html') or content.startswith('<!DOCTYPE'):
+                        if not content.rstrip().endswith('</html>'):
+                            print(f"⚠ ATTENZIONE: File HTML incompleto!")
+                            print(f"   Il file termina con: {content[-50:]}")
+                            print(f"   Prova ad aumentare il tempo di attesa.")
+                            return None
+                        else:
+                            print(f"✓ File HTML completo e valido")
+            except Exception as e:
+                print(f"Avviso: impossibile verificare completezza file: {e}")
+
+            print(f"✓ File scaricato con successo: {downloaded_file}")
+            return downloaded_file
 
         except TimeoutException:
             print("Errore: Timeout durante il download del file")
