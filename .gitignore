@@ -60,3 +60,20 @@ config_private.json
 
 # Node modules
 node_modules/
+package-lock.json
+
+# Frontend build
+frontend/dist/
+frontend/.vite/
+
+# Database
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Service Account
+service-account.json
+
+# Backend logs
+backend/*.log

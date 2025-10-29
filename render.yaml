@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: pratico-backend
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: "cd backend && pip install -r requirements.txt"
+    startCommand: "cd backend && gunicorn app:app"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        value: sqlite:///../data/locali.db
+      - key: PYTHON_VERSION
+        value: 3.11.0
