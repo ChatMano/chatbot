@@ -17,9 +17,13 @@ app = Flask(__name__)
 CORS(app)  # Abilita CORS per React
 
 # Configurazione
+# Costruisci il path assoluto del database
+basedir = os.path.abspath(os.path.dirname(__file__))
+db_path = os.path.join(os.path.dirname(basedir), 'data', 'locali.db')
+
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
     'DATABASE_URL',
-    'sqlite:///../data/locali.db'
+    f'sqlite:///{db_path}'
 )
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'change-me-in-production')
