@@ -10,6 +10,7 @@ from google.oauth2.credentials import Credentials as UserCredentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import pandas as pd
+from bs4 import BeautifulSoup
 
 
 # Scopes necessari per l'accesso a Google Sheets
@@ -160,32 +161,59 @@ class GoogleSheetsUploader:
             df = None
 
             if is_html:
-                # Il file è HTML con una tabella - usa read_html
+                # Il file è HTML con una tabella - leggi direttamente con BeautifulSoup
                 try:
                     print("  Tentativo lettura come tabella HTML...")
-                    # Leggi tutte le tabelle HTML senza interpretare header
-                    # header=None: NON interpretare nessuna riga come header, copia tutto così com'è
-                    dfs = pd.read_html(excel_file, encoding='utf-8', thousands=None, decimal=',', header=None)
 
-                    if not dfs or len(dfs) == 0:
+                    # Leggi il file HTML
+                    with open(excel_file, 'r', encoding='utf-8') as f:
+                        html_content = f.read()
+
+                    # Parsing HTML con BeautifulSoup
+                    soup = BeautifulSoup(html_content, 'lxml')
+
+                    # Trova tutte le tabelle
+                    tables = soup.find_all('table')
+                    if not tables:
                         raise Exception("Nessuna tabella trovata nel file HTML")
 
-                    print(f"  ℹ Trovate {len(dfs)} tabelle nel file HTML")
+                    print(f"  ℹ Trovate {len(tables)} tabelle nel file HTML")
 
-                    # Trova la tabella più grande (probabilmente quella con i dati)
+                    # Trova la tabella più grande (con più righe)
                     max_rows = 0
+                    best_table = None
                     best_table_idx = 0
-                    for idx, table_df in enumerate(dfs):
-                        if len(table_df) > max_rows:
-                            max_rows = len(table_df)
+
+                    for idx, table in enumerate(tables):
+                        rows = table.find_all('tr')
+                        if len(rows) > max_rows:
+                            max_rows = len(rows)
+                            best_table = table
                             best_table_idx = idx
 
-                    df = dfs[best_table_idx]
-                    print(f"  ✓ Selezionata tabella #{best_table_idx} ({len(df)} righe, {len(df.columns)} colonne)")
-                    print(f"  ℹ Dati copiati esattamente come nell'HTML originale (nessuna interpretazione)")
+                    if not best_table:
+                        raise Exception("Nessuna tabella valida trovata")
+
+                    print(f"  ✓ Selezionata tabella #{best_table_idx} con {max_rows} righe")
+
+                    # Estrai TUTTE le righe senza interpretazione
+                    data_rows = []
+                    for row in best_table.find_all('tr'):
+                        cells = row.find_all(['td', 'th'])  # Include sia <td> che <th>
+                        row_data = [cell.get_text(strip=True) for cell in cells]
+                        if row_data:  # Solo se la riga ha dati
+                            data_rows.append(row_data)
+
+                    print(f"  ✓ Estratte {len(data_rows)} righe complete dalla tabella HTML")
+                    print(f"  ℹ Dati copiati esattamente come nell'HTML originale (TUTTE le righe)")
+
+                    # Converti in DataFrame senza header
+                    df = pd.DataFrame(data_rows)
 
                 except Exception as e:
                     print(f"  ✗ Lettura HTML fallita: {e}")
+                    import traceback
+                    traceback.print_exc()
                     raise Exception(f"Impossibile leggere la tabella HTML: {e}")
             else:
                 # Determina l'engine corretto in base all'estensione
