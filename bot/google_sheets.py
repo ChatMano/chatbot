@@ -147,16 +147,34 @@ class GoogleSheetsUploader:
             print(f"Lettura file Excel: {excel_file}")
 
             # Determina l'engine corretto in base all'estensione
+            # A volte i file hanno estensione sbagliata, quindi prova multipli engine
             file_ext = os.path.splitext(excel_file)[1].lower()
+            df = None
+
             if file_ext == '.xls':
-                # Vecchio formato Excel (97-2003) richiede xlrd
-                df = pd.read_excel(excel_file, sheet_name=0, engine='xlrd')
+                # Prova prima xlrd per vecchio formato Excel (97-2003)
+                try:
+                    print("  Tentativo lettura con engine xlrd...")
+                    df = pd.read_excel(excel_file, sheet_name=0, engine='xlrd')
+                    print("  ✓ Lettura con xlrd riuscita")
+                except Exception as e:
+                    print(f"  ✗ xlrd fallito ({str(e)[:50]}), provo openpyxl...")
+                    try:
+                        # Potrebbe essere un .xlsx mascherato da .xls
+                        df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
+                        print("  ✓ Lettura con openpyxl riuscita (file .xlsx mascherato da .xls)")
+                    except Exception as e2:
+                        print(f"  ✗ openpyxl fallito ({str(e2)[:50]})")
+                        raise Exception(f"Impossibile leggere il file Excel: {e}")
             elif file_ext == '.xlsx':
                 # Nuovo formato Excel richiede openpyxl
                 df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
             else:
                 # Prova senza specificare l'engine
                 df = pd.read_excel(excel_file, sheet_name=0)
+
+            if df is None:
+                raise Exception("Impossibile leggere il file Excel")
 
             # Apri il Google Sheet
             print(f"Apertura Google Sheet: {sheet_id}")
