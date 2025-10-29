@@ -179,33 +179,28 @@ class GoogleSheetsUploader:
 
                     print(f"  ℹ Trovate {len(tables)} tabelle nel file HTML")
 
-                    # Trova la tabella più grande (con più righe)
-                    max_rows = 0
-                    best_table = None
-                    best_table_idx = 0
+                    # Estrai TUTTE le righe da TUTTE le tabelle
+                    data_rows = []
+                    total_rows_per_table = []
 
                     for idx, table in enumerate(tables):
-                        rows = table.find_all('tr')
-                        if len(rows) > max_rows:
-                            max_rows = len(rows)
-                            best_table = table
-                            best_table_idx = idx
+                        table_rows = []
+                        for row in table.find_all('tr'):
+                            cells = row.find_all(['td', 'th'])  # Include sia <td> che <th>
+                            row_data = [cell.get_text(strip=True) for cell in cells]
+                            if row_data:  # Solo se la riga ha dati
+                                table_rows.append(row_data)
 
-                    if not best_table:
-                        raise Exception("Nessuna tabella valida trovata")
+                        if table_rows:
+                            data_rows.extend(table_rows)
+                            total_rows_per_table.append(len(table_rows))
+                            print(f"    • Tabella #{idx}: {len(table_rows)} righe")
 
-                    print(f"  ✓ Selezionata tabella #{best_table_idx} con {max_rows} righe")
+                    if not data_rows:
+                        raise Exception("Nessuna riga trovata nelle tabelle HTML")
 
-                    # Estrai TUTTE le righe senza interpretazione
-                    data_rows = []
-                    for row in best_table.find_all('tr'):
-                        cells = row.find_all(['td', 'th'])  # Include sia <td> che <th>
-                        row_data = [cell.get_text(strip=True) for cell in cells]
-                        if row_data:  # Solo se la riga ha dati
-                            data_rows.append(row_data)
-
-                    print(f"  ✓ Estratte {len(data_rows)} righe complete dalla tabella HTML")
-                    print(f"  ℹ Dati copiati esattamente come nell'HTML originale (TUTTE le righe)")
+                    print(f"  ✓ Estratte {len(data_rows)} righe totali da {len(tables)} tabelle")
+                    print(f"  ℹ Dati copiati esattamente come nell'HTML originale (TUTTE le tabelle, TUTTE le righe)")
 
                     # Converti in DataFrame senza header
                     df = pd.DataFrame(data_rows)
