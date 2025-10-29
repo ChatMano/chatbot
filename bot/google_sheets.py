@@ -163,12 +163,25 @@ class GoogleSheetsUploader:
                 # Il file è HTML con una tabella - usa read_html
                 try:
                     print("  Tentativo lettura come tabella HTML...")
-                    dfs = pd.read_html(excel_file)
-                    if dfs and len(dfs) > 0:
-                        df = dfs[0]  # Prendi la prima tabella
-                        print(f"  ✓ Lettura HTML riuscita ({len(df)} righe, {len(df.columns)} colonne)")
-                    else:
+                    # Usa encoding corretto per caratteri italiani
+                    dfs = pd.read_html(excel_file, encoding='utf-8', thousands=None, decimal=',')
+
+                    if not dfs or len(dfs) == 0:
                         raise Exception("Nessuna tabella trovata nel file HTML")
+
+                    print(f"  ℹ Trovate {len(dfs)} tabelle nel file HTML")
+
+                    # Trova la tabella più grande (probabilmente quella con i dati)
+                    max_rows = 0
+                    best_table_idx = 0
+                    for idx, table_df in enumerate(dfs):
+                        if len(table_df) > max_rows:
+                            max_rows = len(table_df)
+                            best_table_idx = idx
+
+                    df = dfs[best_table_idx]
+                    print(f"  ✓ Selezionata tabella #{best_table_idx} ({len(df)} righe, {len(df.columns)} colonne)")
+
                 except Exception as e:
                     print(f"  ✗ Lettura HTML fallita: {e}")
                     raise Exception(f"Impossibile leggere la tabella HTML: {e}")
