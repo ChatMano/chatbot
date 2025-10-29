@@ -5,7 +5,7 @@ import os
 import base64
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 class CryptoManager:
@@ -22,7 +22,7 @@ class CryptoManager:
             secret_key = os.getenv('SECRET_KEY', 'default-secret-key-change-me')
 
         # Genera una chiave Fernet dalla secret key
-        kdf = PBKDF2(
+        kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
             salt=b'pratico-salt',  # In produzione usare un salt unico
