@@ -164,7 +164,8 @@ class GoogleSheetsUploader:
                 try:
                     print("  Tentativo lettura come tabella HTML...")
                     # Usa encoding corretto per caratteri italiani
-                    dfs = pd.read_html(excel_file, encoding='utf-8', thousands=None, decimal=',')
+                    # header=0 usa la prima riga come nomi delle colonne
+                    dfs = pd.read_html(excel_file, encoding='utf-8', thousands=None, decimal=',', header=0)
 
                     if not dfs or len(dfs) == 0:
                         raise Exception("Nessuna tabella trovata nel file HTML")
