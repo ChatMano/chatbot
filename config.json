@@ -1,0 +1,25 @@
+{
+  "dashboard": {
+    "base_url": "https://www.ipraticocloud.com",
+    "login_url": "https://www.ipraticocloud.com/it/auth/login",
+    "after_login_url": "https://www.ipraticocloud.com/it/locale"
+  },
+  "selectors": {
+    "username_field": "#loginForm > div:nth-child(3) > div input",
+    "password_field": "#loginForm > div:nth-child(4) > div input",
+    "login_button": "#loginForm > div.row.submit-row > div button",
+    "reports_menu": "#menu-reports",
+    "download_button": ".btn-download",
+    "file_type_dropdown": "#file-type",
+    "excel_option": "option[value='excel']"
+  },
+  "navigation": {
+    "wait_after_login": 5,
+    "wait_for_download": 10,
+    "max_retries": 3
+  },
+  "google_drive": {
+    "folder_name": "iPratico Reports",
+    "file_prefix": "ipratico_"
+  }
+}
