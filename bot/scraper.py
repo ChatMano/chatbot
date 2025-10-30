@@ -68,6 +68,10 @@ class DashboardScraper:
         # Inizializza il driver
         # Su GitHub Actions, usa chromium-browser e chromedriver di sistema
         if os.getenv('GITHUB_ACTIONS'):
+            # Usa una directory temporanea unica per i dati utente
+            import tempfile
+            temp_dir = tempfile.mkdtemp()
+            chrome_options.add_argument(f"--user-data-dir={temp_dir}")
             chrome_options.binary_location = "/usr/bin/chromium-browser"
             service = Service('/usr/bin/chromedriver')
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
