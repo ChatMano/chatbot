@@ -67,8 +67,8 @@ frontend/dist/
 frontend/.vite/
 
 # Database
-data/
-*.db
+data/*
+!data/locali.db
 *.sqlite
 *.sqlite3
 
