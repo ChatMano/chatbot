@@ -65,13 +65,18 @@ class DashboardScraper:
         chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
         chrome_options.add_experimental_option('useAutomationExtension', False)
 
+        # Opzioni aggiuntive per GitHub Actions
+        if os.getenv('GITHUB_ACTIONS'):
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--disable-extensions")
+            chrome_options.add_argument("--disable-software-rasterizer")
+            chrome_options.add_argument("--disable-setuid-sandbox")
+            chrome_options.add_argument("--remote-debugging-port=9222")
+            chrome_options.add_argument("--single-process")
+
         # Inizializza il driver
         # Su GitHub Actions, usa chromium-browser e chromedriver di sistema
         if os.getenv('GITHUB_ACTIONS'):
-            # Usa una directory temporanea unica per i dati utente
-            import tempfile
-            temp_dir = tempfile.mkdtemp()
-            chrome_options.add_argument(f"--user-data-dir={temp_dir}")
             chrome_options.binary_location = "/usr/bin/chromium-browser"
             service = Service('/usr/bin/chromedriver')
             self.driver = webdriver.Chrome(service=service, options=chrome_options)
