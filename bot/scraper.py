@@ -66,9 +66,11 @@ class DashboardScraper:
         chrome_options.add_experimental_option('useAutomationExtension', False)
 
         # Inizializza il driver
-        # Su GitHub Actions, usa chromedriver dal PATH
+        # Su GitHub Actions, usa chromium-browser e chromedriver di sistema
         if os.getenv('GITHUB_ACTIONS'):
-            self.driver = webdriver.Chrome(options=chrome_options)
+            chrome_options.binary_location = "/usr/bin/chromium-browser"
+            service = Service('/usr/bin/chromedriver')
+            self.driver = webdriver.Chrome(service=service, options=chrome_options)
         else:
             # In locale, usa ChromeDriverManager
             service = Service(ChromeDriverManager().install())
