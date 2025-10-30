@@ -168,12 +168,12 @@ class DashboardScraper:
             clicks = nav_config.get('secret_popup_clicks', 3)
             print(f"Apertura popup segreto ({clicks} click sul footer)...")
             footer_element = self.wait.until(
-                EC.element_to_be_clickable((By.CSS_SELECTOR, selectors.get('secret_popup_trigger')))
+                EC.presence_of_element_located((By.CSS_SELECTOR, selectors.get('secret_popup_trigger')))
             )
 
-            # Esegui i click
+            # Esegui i click usando JavaScript (più affidabile in headless mode)
             for i in range(clicks):
-                footer_element.click()
+                self.driver.execute_script("arguments[0].click();", footer_element)
                 time.sleep(0.3)
                 print(f"Click {i+1}/{clicks}")
 
