@@ -5,8 +5,9 @@ Legge i locali configurati dal database e esegue il download per ognuno
 """
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
+import pytz
 
 # Aggiungi il path del backend
 sys.path.insert(0, str(Path(__file__).parent / 'backend'))
@@ -37,6 +38,47 @@ def setup_database():
         db.create_all()
 
     return app
+
+
+def should_run_locale(locale, app) -> bool:
+    """
+    Verifica se un locale deve essere eseguito in base all'orario impostato
+
+    Args:
+        locale: Oggetto Locale dal database
+        app: Flask app context
+
+    Returns:
+        True se il locale deve essere eseguito ora, False altrimenti
+    """
+    # Ottieni l'ora corrente italiana
+    italy_tz = pytz.timezone('Europe/Rome')
+    now_italy = datetime.now(italy_tz)
+    current_hour = now_italy.strftime('%H:%M')
+
+    # Controlla se l'orario corrisponde (con tolleranza di 1 ora)
+    locale_time = locale.orario_esecuzione  # Formato: "03:00"
+    locale_hour = int(locale_time.split(':')[0])
+    current_hour_int = now_italy.hour
+
+    # Il locale deve girare in questa fascia oraria?
+    if locale_hour != current_hour_int:
+        return False
+
+    # Verifica se è già stato eseguito oggi con successo
+    with app.app_context():
+        today_start = now_italy.replace(hour=0, minute=0, second=0, microsecond=0)
+        last_log = LocaleLog.query.filter(
+            LocaleLog.locale_id == locale.id,
+            LocaleLog.eseguito_at >= today_start.replace(tzinfo=None),
+            LocaleLog.successo == True
+        ).first()
+
+        if last_log:
+            print(f"  ⏭️  Locale già eseguito oggi alle {last_log.eseguito_at.strftime('%H:%M')}")
+            return False
+
+    return True
 
 
 def process_locale(locale, config, crypto, credentials_file):
@@ -125,9 +167,13 @@ def process_locale(locale, config, crypto, credentials_file):
 def main():
     """Esegue il processo completo per tutti i locali attivi"""
 
+    # Ottieni l'ora corrente italiana
+    italy_tz = pytz.timezone('Europe/Rome')
+    now_italy = datetime.now(italy_tz)
+
     print("\n" + "="*60)
     print("BOT iPratico - ESECUZIONE AUTOMATICA MULTI-LOCALE")
-    print(f"Data: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print(f"Data: {now_italy.strftime('%Y-%m-%d %H:%M:%S')} (ora italiana)")
     print("="*60 + "\n")
 
     # Setup
@@ -157,13 +203,33 @@ def main():
             print("⚠ Nessun locale attivo trovato nel database")
             sys.exit(0)
 
-        print(f"✓ Trovati {len(locali_attivi)} locali attivi da processare\n")
+        print(f"✓ Trovati {len(locali_attivi)} locali attivi nel database\n")
+
+        # Filtra i locali che devono essere eseguiti ora
+        locali_da_processare = []
+        for locale in locali_attivi:
+            print(f"🔍 Controllo {locale.nome} (orario: {locale.orario_esecuzione})...")
+            if should_run_locale(locale, app):
+                print(f"  ✅ Da processare ora")
+                locali_da_processare.append(locale)
+            else:
+                if locale.orario_esecuzione.split(':')[0] != str(now_italy.hour).zfill(2):
+                    print(f"  ⏭️  Orario non corrispondente (atteso: {locale.orario_esecuzione}, corrente: {now_italy.strftime('%H:%M')})")
+
+        if not locali_da_processare:
+            print(f"\n⏰ Nessun locale da processare alle {now_italy.strftime('%H:%M')}")
+            print("   I locali verranno eseguiti ai loro orari programmati")
+            sys.exit(0)
+
+        print(f"\n{'='*60}")
+        print(f"✓ {len(locali_da_processare)} locale/i da processare alle {now_italy.strftime('%H:%M')}")
+        print(f"{'='*60}\n")
 
         # Processa ogni locale
         risultati = []
-        for idx, locale in enumerate(locali_attivi, 1):
+        for idx, locale in enumerate(locali_da_processare, 1):
             print(f"\n{'='*60}")
-            print(f"LOCALE {idx}/{len(locali_attivi)}")
+            print(f"LOCALE {idx}/{len(locali_da_processare)}")
             print(f"{'='*60}")
 
             log_entry = process_locale(locale, config, crypto, credentials_file)
