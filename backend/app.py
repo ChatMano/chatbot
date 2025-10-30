@@ -214,6 +214,26 @@ def get_locale_logs(locale_id):
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/locali/<int:locale_id>/esegui-ora', methods=['POST'])
+def esegui_locale_ora(locale_id):
+    """Imposta il flag per eseguire immediatamente un locale"""
+    try:
+        locale = Locale.query.get_or_404(locale_id)
+
+        # Imposta il flag esegui_ora
+        locale.esegui_ora = True
+        db.session.commit()
+
+        return jsonify({
+            'message': f'Locale {locale.nome} verrà eseguito alla prossima esecuzione del workflow',
+            'locale': locale.to_dict()
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/locali/<int:locale_id>/log', methods=['POST'])
 def create_locale_log(locale_id):
     """Crea un nuovo log per un locale (usato dal bot)"""
