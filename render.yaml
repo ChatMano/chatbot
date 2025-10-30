@@ -5,11 +5,13 @@ services:
     region: frankfurt
     plan: free
     buildCommand: "cd backend && pip install -r requirements.txt"
-    startCommand: "cd backend && gunicorn app:app"
+    startCommand: "cd backend && gunicorn app:app --bind 0.0.0.0:$PORT"
     envVars:
-      - key: SECRET_KEY
-        generateValue: true
+      - key: ENCRYPTION_KEY
+        sync: false  # Configureremo manualmente
       - key: DATABASE_URL
-        value: sqlite:///../data/locali.db
+        value: sqlite:///locali.db
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: FLASK_ENV
+        value: production
