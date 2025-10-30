@@ -237,7 +237,7 @@ def _trigger_github_workflow(api_url: str, payload: dict, headers: dict):
 
 @app.route('/api/locali/<int:locale_id>/esegui-ora', methods=['POST'])
 def esegui_locale_ora(locale_id):
-    """Imposta il flag per esecuzione immediata del bot (verrà eseguito da GitHub Actions)"""
+    """Triggera immediatamente l'esecuzione del bot via GitHub Actions"""
     try:
         locale = Locale.query.get_or_404(locale_id)
 
@@ -246,21 +246,78 @@ def esegui_locale_ora(locale_id):
                 'error': f'Il locale {locale.nome} non è attivo. Attivalo prima di eseguirlo.'
             }), 400
 
+        # Ottieni le credenziali GitHub
+        github_token = os.getenv('GITHUB_TOKEN')
+        github_repo = os.getenv('GITHUB_REPOSITORY', 'ChatMano/chatbot')
+
+        if not github_token:
+            # Se GITHUB_TOKEN non è disponibile, usa fallback: imposta solo il flag
+            print("⚠️ GITHUB_TOKEN non configurato - fallback al metodo schedulato")
+            locale.esegui_ora = True
+            db.session.commit()
+
+            return jsonify({
+                'success': True,
+                'message': f'✅ Richiesta ricevuta per {locale.nome}!\n\n⚠️ GITHUB_TOKEN non configurato.\nIl bot verrà eseguito al prossimo ciclo schedulato (entro 1 ora).'
+            }), 200
+
         # Imposta il flag esegui_ora per questo locale
         locale.esegui_ora = True
         db.session.commit()
 
-        print(f"🚀 Esecuzione manuale richiesta per locale {locale_id} ({locale.nome})")
-        print(f"   Flag 'esegui_ora' impostato - il bot verrà eseguito al prossimo ciclo")
+        print(f"🚀 Trigger immediato GitHub Actions per locale {locale_id} ({locale.nome})")
 
-        # Ritorna messaggio di conferma
+        # URL per triggerare il workflow via GitHub API
+        api_url = f'https://api.github.com/repos/{github_repo}/actions/workflows/daily-download.yml/dispatches'
+
+        headers = {
+            'Authorization': f'Bearer {github_token}',
+            'Accept': 'application/vnd.github.v3+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+        }
+
+        payload = {
+            'ref': 'main',  # branch su cui eseguire il workflow
+            'inputs': {
+                'locale_id': str(locale_id)
+            }
+        }
+
+        # Chiama l'API GitHub per triggerare il workflow (con retry automatico)
+        print(f"   Chiamata API GitHub Actions...")
+        response = _trigger_github_workflow(api_url, payload, headers)
+
+        if response.status_code == 204:
+            # Successo - il workflow è stato triggerato
+            print(f"   ✓ Workflow triggerato con successo!")
+            return jsonify({
+                'success': True,
+                'message': f'🚀 Esecuzione avviata per {locale.nome}!\n\nIl bot partirà entro 1-2 minuti.'
+            }), 200
+        else:
+            # Errore nella chiamata API - fallback al metodo schedulato
+            print(f"   ⚠️ Errore GitHub API (status {response.status_code})")
+            return jsonify({
+                'success': True,
+                'message': f'✅ Richiesta ricevuta per {locale.nome}!\n\n⚠️ Impossibile triggerare workflow immediato.\nIl bot verrà eseguito al prossimo ciclo schedulato.'
+            }), 200
+
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Errore connessione GitHub: {e}")
+        # Anche in caso di errore, il flag è impostato, quindi verrà eseguito al prossimo ciclo
         return jsonify({
             'success': True,
-            'message': f'✅ Richiesta ricevuta per {locale.nome}!\n\nIl bot verrà eseguito entro la prossima ora dal workflow automatico.'
+            'message': f'✅ Richiesta ricevuta per {locale.nome}!\n\n⚠️ Errore trigger immediato.\nIl bot verrà eseguito al prossimo ciclo schedulato.'
         }), 200
-
     except Exception as e:
-        print(f"❌ Errore durante l'impostazione del flag: {e}")
+        # Resetta il flag in caso di errore critico
+        try:
+            locale.esegui_ora = False
+            db.session.commit()
+        except:
+            pass
+
+        print(f"❌ Errore critico: {e}")
         import traceback
         traceback.print_exc()
 
