@@ -19,6 +19,7 @@ import pytz
 
 from .config_manager import ConfigManager
 from .auth import AuthManager
+from .retry_selenium import retry_selenium
 
 
 class DashboardScraper:
@@ -94,6 +95,7 @@ class DashboardScraper:
 
         print("Driver Chrome inizializzato con successo")
 
+    @retry_selenium(max_retries=3, initial_delay=2.0)
     def login(self, username: str, password: str) -> bool:
         """
         Esegue il login nella dashboard
@@ -150,6 +152,7 @@ class DashboardScraper:
             print(f"Errore durante il login: {e}")
             return False
 
+    @retry_selenium(max_retries=3, initial_delay=2.0)
     def unlock_secret_popup(self, pin: str = '123456') -> bool:
         """
         Apre il popup segreto e inserisce il codice PIN
@@ -211,6 +214,7 @@ class DashboardScraper:
             print(f"Errore durante l'apertura del popup segreto: {e}")
             return False
 
+    @retry_selenium(max_retries=3, initial_delay=2.0)
     def navigate_to_reports_page(self) -> bool:
         """
         Naviga alla pagina dei report tramite i menu
@@ -302,6 +306,7 @@ class DashboardScraper:
             print("Continuo con il locale di default...")
             return True  # Non fallisce, continua con default
 
+    @retry_selenium(max_retries=3, initial_delay=2.0)
     def set_date_filter(self) -> bool:
         """
         Imposta il filtro data al giorno precedente (formato DD/MM/YYYY, timezone Roma)
@@ -370,6 +375,7 @@ class DashboardScraper:
             print(f"Errore durante l'impostazione del filtro data: {e}")
             return False
 
+    @retry_selenium(max_retries=3, initial_delay=2.0)
     def trigger_data_update(self) -> bool:
         """
         Clicca sul pulsante di aggiornamento dati
@@ -398,6 +404,7 @@ class DashboardScraper:
             print(f"Errore durante l'aggiornamento dati: {e}")
             return False
 
+    @retry_selenium(max_retries=3, initial_delay=2.0)
     def download_excel_file(self) -> Optional[str]:
         """
         Scarica il file Excel dalla dashboard
