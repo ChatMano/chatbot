@@ -27,6 +27,7 @@ class Locale(db.Model):
     google_sheet_id = db.Column(db.String(200), nullable=False)
     locale_selector = db.Column(db.String(500), nullable=True)  # Selettore per identificare il locale su iPratico
     attivo = db.Column(db.Boolean, default=True, nullable=False)
+    esegui_ora = db.Column(db.Boolean, default=False, nullable=False)  # Flag per esecuzione manuale immediata
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -43,6 +44,7 @@ class Locale(db.Model):
             'google_sheet_id': self.google_sheet_id,
             'locale_selector': self.locale_selector,
             'attivo': self.attivo,
+            'esegui_ora': self.esegui_ora,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
             'ultimo_log': self.logs[0].to_dict() if self.logs else None

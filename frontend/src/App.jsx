@@ -88,6 +88,18 @@ function App() {
     }
   }
 
+  const handleRunNow = async (localeId) => {
+    if (!confirm('Vuoi eseguire questo locale immediatamente?\n\nIl locale verrà processato alla prossima esecuzione oraria del workflow (entro 1 ora).')) return
+
+    try {
+      const response = await axios.post(`${API_URL}/locali/${localeId}/esegui-ora`)
+      alert(`✅ ${response.data.message}\n\nIl locale verrà eseguito entro 1 ora.`)
+      await loadData()
+    } catch (err) {
+      alert('Errore: ' + (err.response?.data?.error || err.message))
+    }
+  }
+
   const handleCloseForm = () => {
     setShowForm(false)
     setEditingLocale(null)
@@ -145,6 +157,7 @@ function App() {
             onEdit={handleEditLocale}
             onDelete={handleDeleteLocale}
             onTest={handleTestLocale}
+            onRunNow={handleRunNow}
           />
         </div>
       </div>

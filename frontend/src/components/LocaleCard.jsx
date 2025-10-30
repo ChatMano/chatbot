@@ -1,4 +1,4 @@
-function LocaleCard({ locale, onEdit, onDelete, onTest }) {
+function LocaleCard({ locale, onEdit, onDelete, onTest, onRunNow }) {
   const getStatusBadge = () => {
     if (!locale.attivo) {
       return <span className="badge badge-danger">Disattivo</span>
@@ -42,6 +42,9 @@ function LocaleCard({ locale, onEdit, onDelete, onTest }) {
       </div>
 
       <div className="locale-actions">
+        <button className="btn btn-primary" onClick={onRunNow} title="Esegui immediatamente questo locale">
+          🚀 Esegui Ora
+        </button>
         <button className="btn btn-success" onClick={onTest} title="Esegui test download">
           ▶️ Test
         </button>

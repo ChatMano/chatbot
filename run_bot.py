@@ -42,7 +42,7 @@ def setup_database():
 
 def should_run_locale(locale, app) -> bool:
     """
-    Verifica se un locale deve essere eseguito in base all'orario impostato
+    Verifica se un locale deve essere eseguito in base all'orario impostato o al flag esegui_ora
 
     Args:
         locale: Oggetto Locale dal database
@@ -51,6 +51,11 @@ def should_run_locale(locale, app) -> bool:
     Returns:
         True se il locale deve essere eseguito ora, False altrimenti
     """
+    # Se è impostato il flag esegui_ora, esegui sempre
+    if locale.esegui_ora:
+        print(f"  🚀 Esecuzione manuale richiesta!")
+        return True
+
     # Ottieni l'ora corrente italiana
     italy_tz = pytz.timezone('Europe/Rome')
     now_italy = datetime.now(italy_tz)
@@ -234,6 +239,12 @@ def main():
 
             log_entry = process_locale(locale, config, crypto, credentials_file)
             db.session.add(log_entry)
+
+            # Resetta il flag esegui_ora dopo l'esecuzione
+            if locale.esegui_ora:
+                locale.esegui_ora = False
+                print(f"  ✓ Flag esecuzione manuale resettato")
+
             db.session.commit()
 
             risultati.append((locale.nome, log_entry.successo))
