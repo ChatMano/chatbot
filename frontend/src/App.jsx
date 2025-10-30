@@ -89,11 +89,11 @@ function App() {
   }
 
   const handleRunNow = async (localeId) => {
-    if (!confirm('Vuoi eseguire questo locale immediatamente?\n\nIl locale verrà processato alla prossima esecuzione oraria del workflow (entro 1 ora).')) return
+    if (!confirm('Vuoi eseguire questo locale immediatamente?\n\nIl bot partirà entro 1-2 minuti tramite GitHub Actions.')) return
 
     try {
       const response = await axios.post(`${API_URL}/locali/${localeId}/esegui-ora`)
-      alert(`✅ ${response.data.message}\n\nIl locale verrà eseguito entro 1 ora.`)
+      alert(response.data.message)
       await loadData()
     } catch (err) {
       alert('Errore: ' + (err.response?.data?.error || err.message))
