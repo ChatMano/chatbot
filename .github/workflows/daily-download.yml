@@ -47,6 +47,10 @@ jobs:
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
 
+      - name: Migrate database (add esegui_ora column if missing)
+        run: |
+          python migrate_db.py
+
       - name: Run iPratico bot for all locales
         env:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
