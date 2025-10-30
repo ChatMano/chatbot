@@ -200,31 +200,60 @@ def main():
 
     crypto = CryptoManager(encryption_key)
 
-    # Leggi i locali attivi dal database
+    # Controlla se è stata richiesta l'esecuzione di un locale specifico
+    locale_id_richiesto = os.getenv('LOCALE_ID')
+
+    # Leggi i locali dal database
     with app.app_context():
-        locali_attivi = Locale.query.filter_by(attivo=True).all()
+        # Se è specificato un LOCALE_ID, esegui solo quello
+        if locale_id_richiesto:
+            try:
+                locale_id = int(locale_id_richiesto)
+                locale = Locale.query.get(locale_id)
 
-        if not locali_attivi:
-            print("⚠ Nessun locale attivo trovato nel database")
-            sys.exit(0)
+                if not locale:
+                    print(f"❌ ERRORE: Locale con ID {locale_id} non trovato!")
+                    sys.exit(1)
 
-        print(f"✓ Trovati {len(locali_attivi)} locali attivi nel database\n")
+                if not locale.attivo:
+                    print(f"⚠️ ATTENZIONE: Locale {locale.nome} non è attivo!")
+                    print("   Esecuzione annullata")
+                    sys.exit(0)
 
-        # Filtra i locali che devono essere eseguiti ora
-        locali_da_processare = []
-        for locale in locali_attivi:
-            print(f"🔍 Controllo {locale.nome} (orario: {locale.orario_esecuzione})...")
-            if should_run_locale(locale, app):
-                print(f"  ✅ Da processare ora")
-                locali_da_processare.append(locale)
-            else:
-                if locale.orario_esecuzione.split(':')[0] != str(now_italy.hour).zfill(2):
-                    print(f"  ⏭️  Orario non corrispondente (atteso: {locale.orario_esecuzione}, corrente: {now_italy.strftime('%H:%M')})")
+                print(f"🚀 ESECUZIONE MANUALE RICHIESTA")
+                print(f"   Locale: {locale.nome}")
+                print(f"   Modalità: Istantanea (non programmata)\n")
 
-        if not locali_da_processare:
-            print(f"\n⏰ Nessun locale da processare alle {now_italy.strftime('%H:%M')}")
-            print("   I locali verranno eseguiti ai loro orari programmati")
-            sys.exit(0)
+                locali_da_processare = [locale]
+
+            except ValueError:
+                print(f"❌ ERRORE: LOCALE_ID non valido: {locale_id_richiesto}")
+                sys.exit(1)
+        else:
+            # Esecuzione programmata: leggi tutti i locali attivi
+            locali_attivi = Locale.query.filter_by(attivo=True).all()
+
+            if not locali_attivi:
+                print("⚠ Nessun locale attivo trovato nel database")
+                sys.exit(0)
+
+            print(f"✓ Trovati {len(locali_attivi)} locali attivi nel database\n")
+
+            # Filtra i locali che devono essere eseguiti ora
+            locali_da_processare = []
+            for locale in locali_attivi:
+                print(f"🔍 Controllo {locale.nome} (orario: {locale.orario_esecuzione})...")
+                if should_run_locale(locale, app):
+                    print(f"  ✅ Da processare ora")
+                    locali_da_processare.append(locale)
+                else:
+                    if locale.orario_esecuzione.split(':')[0] != str(now_italy.hour).zfill(2):
+                        print(f"  ⏭️  Orario non corrispondente (atteso: {locale.orario_esecuzione}, corrente: {now_italy.strftime('%H:%M')})")
+
+            if not locali_da_processare:
+                print(f"\n⏰ Nessun locale da processare alle {now_italy.strftime('%H:%M')}")
+                print("   I locali verranno eseguiti ai loro orari programmati")
+                sys.exit(0)
 
         print(f"\n{'='*60}")
         print(f"✓ {len(locali_da_processare)} locale/i da processare alle {now_italy.strftime('%H:%M')}")
