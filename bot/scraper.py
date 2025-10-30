@@ -70,16 +70,12 @@ class DashboardScraper:
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--disable-extensions")
             chrome_options.add_argument("--disable-software-rasterizer")
-            chrome_options.add_argument("--disable-setuid-sandbox")
             chrome_options.add_argument("--remote-debugging-port=9222")
-            chrome_options.add_argument("--single-process")
 
         # Inizializza il driver
-        # Su GitHub Actions, usa chromium-browser e chromedriver di sistema
         if os.getenv('GITHUB_ACTIONS'):
-            chrome_options.binary_location = "/usr/bin/chromium-browser"
-            service = Service('/usr/bin/chromedriver')
-            self.driver = webdriver.Chrome(service=service, options=chrome_options)
+            # Su GitHub Actions, usa Chrome e ChromeDriver dal PATH (installati da setup-chrome action)
+            self.driver = webdriver.Chrome(options=chrome_options)
         else:
             # In locale, usa ChromeDriverManager
             service = Service(ChromeDriverManager().install())
