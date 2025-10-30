@@ -4,6 +4,7 @@ Modulo per scrivere dati su Google Sheets
 import os
 from datetime import datetime
 from typing import Optional, List
+import pytz
 import gspread
 from google.oauth2.service_account import Credentials
 from google.oauth2.credentials import Credentials as UserCredentials
@@ -270,8 +271,9 @@ class GoogleSheetsUploader:
             print(f"Scrittura di {len(data)} righe su Google Sheets...")
             worksheet.update('A1', data)
 
-            # Aggiungi un timestamp nella prima riga
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            # Aggiungi un timestamp nella prima riga (fuso orario italiano)
+            italy_tz = pytz.timezone('Europe/Rome')
+            timestamp = datetime.now(italy_tz).strftime("%Y-%m-%d %H:%M:%S")
             note = f'Aggiornato: {timestamp}'
             # Scrivi il timestamp in una cella separata (ad esempio ultima colonna)
             last_col = len(data[0]) + 1 if data else 1
