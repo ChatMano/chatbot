@@ -2,6 +2,7 @@
 Backend Flask API per la gestione dei locali
 """
 import os
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -216,21 +217,53 @@ def get_locale_logs(locale_id):
 
 @app.route('/api/locali/<int:locale_id>/esegui-ora', methods=['POST'])
 def esegui_locale_ora(locale_id):
-    """Imposta il flag per eseguire immediatamente un locale"""
+    """Triggera immediatamente l'esecuzione di un locale via GitHub Actions"""
     try:
         locale = Locale.query.get_or_404(locale_id)
 
-        # Imposta il flag esegui_ora
-        locale.esegui_ora = True
-        db.session.commit()
+        # Ottieni le credenziali GitHub
+        github_token = os.getenv('GITHUB_TOKEN')
+        github_repo = os.getenv('GITHUB_REPOSITORY', 'ChatMano/chatbot')
 
-        return jsonify({
-            'message': f'Locale {locale.nome} verrà eseguito alla prossima esecuzione del workflow',
-            'locale': locale.to_dict()
-        }), 200
+        if not github_token:
+            return jsonify({
+                'error': 'GITHUB_TOKEN non configurato sul server. Contatta l\'amministratore.'
+            }), 500
 
+        # URL per triggerare il workflow via GitHub API
+        api_url = f'https://api.github.com/repos/{github_repo}/actions/workflows/daily-download.yml/dispatches'
+
+        headers = {
+            'Authorization': f'Bearer {github_token}',
+            'Accept': 'application/vnd.github.v3+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+        }
+
+        payload = {
+            'ref': 'main',  # branch su cui eseguire il workflow
+            'inputs': {
+                'locale_id': str(locale_id)
+            }
+        }
+
+        # Chiama l'API GitHub per triggerare il workflow
+        response = requests.post(api_url, json=payload, headers=headers, timeout=10)
+
+        if response.status_code == 204:
+            # Successo - il workflow è stato triggerato
+            return jsonify({
+                'success': True,
+                'message': f'🚀 Esecuzione avviata per {locale.nome}!\n\nIl bot partirà entro 1-2 minuti.'
+            }), 200
+        else:
+            # Errore nella chiamata API
+            return jsonify({
+                'error': f'Errore GitHub API (status {response.status_code}): {response.text}'
+            }), 500
+
+    except requests.exceptions.RequestException as e:
+        return jsonify({'error': f'Errore di connessione a GitHub: {str(e)}'}), 500
     except Exception as e:
-        db.session.rollback()
         return jsonify({'error': str(e)}), 500
 
 
