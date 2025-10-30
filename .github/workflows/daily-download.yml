@@ -1,9 +1,9 @@
 name: iPratico Daily Download
 
 on:
-  # Esegui ogni giorno alle 02:00 UTC (03:00 ora italiana)
+  # Esegui ogni giorno alle 10:15 UTC (11:15 ora italiana) - TEMPORANEO PER TEST
   schedule:
-    - cron: '0 2 * * *'
+    - cron: '15 10 * * *'
 
   # Permetti esecuzione manuale
   workflow_dispatch:
