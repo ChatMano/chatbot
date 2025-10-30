@@ -1,0 +1,290 @@
+"""
+Modulo per scrivere dati su Google Sheets
+"""
+import os
+from datetime import datetime
+from typing import Optional, List
+import gspread
+from google.oauth2.service_account import Credentials
+from google.oauth2.credentials import Credentials as UserCredentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+import pandas as pd
+from bs4 import BeautifulSoup
+
+
+# Scopes necessari per l'accesso a Google Sheets
+SCOPES = [
+    'https://www.googleapis.com/auth/spreadsheets',
+    'https://www.googleapis.com/auth/drive.file'
+]
+
+
+class GoogleSheetsUploader:
+    """Gestisce la scrittura di dati su Google Sheets"""
+
+    def __init__(self):
+        """Inizializza l'uploader di Google Sheets"""
+        self.client = None
+        self.credentials = None
+
+    def authenticate_service_account(self, credentials_file: str = 'credentials.json') -> bool:
+        """
+        Autentica usando un Service Account (consigliato per automazione)
+
+        Args:
+            credentials_file: Path al file JSON del service account
+
+        Returns:
+            True se l'autenticazione ha successo, False altrimenti
+        """
+        try:
+            if not os.path.exists(credentials_file):
+                print(f"File {credentials_file} non trovato")
+                return False
+
+            credentials = Credentials.from_service_account_file(
+                credentials_file,
+                scopes=SCOPES
+            )
+
+            self.client = gspread.authorize(credentials)
+            print("Autenticazione Service Account completata")
+            return True
+
+        except Exception as e:
+            print(f"Errore durante l'autenticazione Service Account: {e}")
+            return False
+
+    def authenticate_oauth(self) -> bool:
+        """
+        Autentica usando OAuth2 (per uso locale/interattivo)
+
+        Returns:
+            True se l'autenticazione ha successo, False altrimenti
+        """
+        try:
+            # Il file token.json memorizza i token di accesso e refresh dell'utente
+            if os.path.exists('token.json'):
+                self.credentials = UserCredentials.from_authorized_user_file('token.json', SCOPES)
+
+            # Se non ci sono credenziali valide disponibili, chiedi all'utente di effettuare il login
+            if not self.credentials or not self.credentials.valid:
+                if self.credentials and self.credentials.expired and self.credentials.refresh_token:
+                    print("Aggiornamento credenziali Google...")
+                    self.credentials.refresh(Request())
+                else:
+                    if not os.path.exists('credentials.json'):
+                        print("\nERRORE: File credentials.json non trovato!")
+                        print("Per utilizzare Google Sheets API con OAuth:")
+                        print("1. Vai su https://console.cloud.google.com/")
+                        print("2. Crea un nuovo progetto o seleziona uno esistente")
+                        print("3. Abilita Google Sheets API")
+                        print("4. Crea credenziali OAuth 2.0 per applicazione desktop")
+                        print("5. Scarica il file JSON e salvalo come 'credentials.json'")
+                        return False
+
+                    print("Autenticazione con Google...")
+                    flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+                    self.credentials = flow.run_local_server(port=0)
+
+                # Salva le credenziali per il prossimo utilizzo
+                with open('token.json', 'w') as token:
+                    token.write(self.credentials.to_json())
+
+            # Crea il client gspread
+            self.client = gspread.authorize(self.credentials)
+            print("Autenticazione OAuth completata")
+            return True
+
+        except Exception as e:
+            print(f"Errore durante l'autenticazione OAuth: {e}")
+            return False
+
+    def authenticate(self, use_service_account: bool = True) -> bool:
+        """
+        Autentica con il metodo specificato
+
+        Args:
+            use_service_account: Se True usa service account, altrimenti OAuth
+
+        Returns:
+            True se l'autenticazione ha successo
+        """
+        if use_service_account:
+            return self.authenticate_service_account()
+        else:
+            return self.authenticate_oauth()
+
+    def write_excel_to_sheet(
+        self,
+        excel_file: str,
+        sheet_id: str,
+        worksheet_name: str = None,
+        clear_existing: bool = True
+    ) -> bool:
+        """
+        Scrive i dati di un file Excel su Google Sheets
+
+        Args:
+            excel_file: Path al file Excel
+            sheet_id: ID del Google Sheet
+            worksheet_name: Nome del foglio (se None, usa il primo)
+            clear_existing: Se True, cancella i dati esistenti prima di scrivere
+
+        Returns:
+            True se la scrittura ha successo, False altrimenti
+        """
+        try:
+            if not self.client:
+                print("Client non autenticato")
+                return False
+
+            if not os.path.exists(excel_file):
+                print(f"File Excel {excel_file} non trovato")
+                return False
+
+            # Leggi il file Excel
+            print(f"Lettura file Excel: {excel_file}")
+
+            # Verifica prima se è un file HTML mascherato da Excel
+            is_html = False
+            try:
+                with open(excel_file, 'r', encoding='utf-8') as f:
+                    first_line = f.readline().strip()
+                    if first_line.startswith('<html') or first_line.startswith('<!DOCTYPE'):
+                        is_html = True
+                        print("  ℹ File rilevato come HTML (tabella HTML esportata)")
+            except:
+                pass
+
+            df = None
+
+            if is_html:
+                # Il file è HTML con una tabella - leggi direttamente con BeautifulSoup
+                try:
+                    print("  Tentativo lettura come tabella HTML...")
+
+                    # Leggi il file HTML
+                    with open(excel_file, 'r', encoding='utf-8') as f:
+                        html_content = f.read()
+
+                    # Parsing HTML con BeautifulSoup
+                    soup = BeautifulSoup(html_content, 'lxml')
+
+                    # Trova tutte le tabelle
+                    tables = soup.find_all('table')
+                    if not tables:
+                        raise Exception("Nessuna tabella trovata nel file HTML")
+
+                    print(f"  ℹ Trovate {len(tables)} tabelle nel file HTML")
+
+                    # Estrai TUTTE le righe da TUTTE le tabelle
+                    data_rows = []
+                    total_rows_per_table = []
+
+                    for idx, table in enumerate(tables):
+                        table_rows = []
+                        for row in table.find_all('tr'):
+                            cells = row.find_all(['td', 'th'])  # Include sia <td> che <th>
+                            row_data = [cell.get_text(strip=True) for cell in cells]
+                            if row_data:  # Solo se la riga ha dati
+                                table_rows.append(row_data)
+
+                        if table_rows:
+                            data_rows.extend(table_rows)
+                            total_rows_per_table.append(len(table_rows))
+                            print(f"    • Tabella #{idx}: {len(table_rows)} righe")
+
+                    if not data_rows:
+                        raise Exception("Nessuna riga trovata nelle tabelle HTML")
+
+                    print(f"  ✓ Estratte {len(data_rows)} righe totali da {len(tables)} tabelle")
+                    print(f"  ℹ Dati copiati esattamente come nell'HTML originale (TUTTE le tabelle, TUTTE le righe)")
+
+                    # Converti in DataFrame senza header
+                    df = pd.DataFrame(data_rows)
+
+                except Exception as e:
+                    print(f"  ✗ Lettura HTML fallita: {e}")
+                    import traceback
+                    traceback.print_exc()
+                    raise Exception(f"Impossibile leggere la tabella HTML: {e}")
+            else:
+                # Determina l'engine corretto in base all'estensione
+                # A volte i file hanno estensione sbagliata, quindi prova multipli engine
+                file_ext = os.path.splitext(excel_file)[1].lower()
+
+                if file_ext == '.xls':
+                    # Prova prima xlrd per vecchio formato Excel (97-2003)
+                    try:
+                        print("  Tentativo lettura con engine xlrd...")
+                        df = pd.read_excel(excel_file, sheet_name=0, engine='xlrd')
+                        print("  ✓ Lettura con xlrd riuscita")
+                    except Exception as e:
+                        print(f"  ✗ xlrd fallito ({str(e)[:50]}), provo openpyxl...")
+                        try:
+                            # Potrebbe essere un .xlsx mascherato da .xls
+                            df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
+                            print("  ✓ Lettura con openpyxl riuscita (file .xlsx mascherato da .xls)")
+                        except Exception as e2:
+                            print(f"  ✗ openpyxl fallito ({str(e2)[:50]})")
+                            raise Exception(f"Impossibile leggere il file Excel: {e}")
+                elif file_ext == '.xlsx':
+                    # Nuovo formato Excel richiede openpyxl
+                    df = pd.read_excel(excel_file, sheet_name=0, engine='openpyxl')
+                else:
+                    # Prova senza specificare l'engine
+                    df = pd.read_excel(excel_file, sheet_name=0)
+
+            if df is None:
+                raise Exception("Impossibile leggere il file")
+
+            # Apri il Google Sheet
+            print(f"Apertura Google Sheet: {sheet_id}")
+            spreadsheet = self.client.open_by_key(sheet_id)
+
+            # Seleziona o crea il worksheet
+            if worksheet_name:
+                try:
+                    worksheet = spreadsheet.worksheet(worksheet_name)
+                except gspread.exceptions.WorksheetNotFound:
+                    print(f"Foglio '{worksheet_name}' non trovato, lo creo...")
+                    worksheet = spreadsheet.add_worksheet(title=worksheet_name, rows=1000, cols=26)
+            else:
+                worksheet = spreadsheet.sheet1
+
+            # Cancella dati esistenti se richiesto
+            if clear_existing:
+                print("Cancellazione dati esistenti...")
+                worksheet.clear()
+
+            # Prepara i dati per Google Sheets
+            # Copia esattamente i dati così come sono (senza aggiungere header extra)
+            data = df.values.tolist()
+
+            # Converti eventuali NaN in stringhe vuote
+            data = [['' if pd.isna(cell) else cell for cell in row] for row in data]
+
+            # Scrivi i dati
+            print(f"Scrittura di {len(data)} righe su Google Sheets...")
+            worksheet.update('A1', data)
+
+            # Aggiungi un timestamp nella prima riga
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            note = f'Aggiornato: {timestamp}'
+            # Scrivi il timestamp in una cella separata (ad esempio ultima colonna)
+            last_col = len(data[0]) + 1 if data else 1
+            worksheet.update_acell(f'{chr(64 + last_col)}1', note)
+
+            print(f"✓ Dati scritti con successo su Google Sheets!")
+            print(f"  Righe: {len(data)}")
+            print(f"  Colonne: {len(data[0]) if data else 0}")
+
+            return True
+
+        except Exception as e:
+            print(f"Errore durante la scrittura su Google Sheets: {e}")
+            import traceback
+            traceback.print_exc()
+            return False

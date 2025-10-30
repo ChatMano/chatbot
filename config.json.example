@@ -1,0 +1,25 @@
+{
+  "dashboard": {
+    "base_url": "https://your-dashboard-url.com",
+    "login_url": "https://your-dashboard-url.com/login",
+    "download_page_url": "https://your-dashboard-url.com/reports/download"
+  },
+  "selectors": {
+    "username_field": "#username",
+    "password_field": "#password",
+    "login_button": "button[type='submit']",
+    "reports_menu": "#menu-reports",
+    "download_button": ".btn-download",
+    "file_type_dropdown": "#file-type",
+    "excel_option": "option[value='excel']"
+  },
+  "navigation": {
+    "wait_after_login": 3,
+    "wait_for_download": 10,
+    "max_retries": 3
+  },
+  "google_drive": {
+    "folder_name": "Dashboard Reports",
+    "file_prefix": "report_"
+  }
+}

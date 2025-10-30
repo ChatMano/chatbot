@@ -1,0 +1,58 @@
+name: iPratico Daily Download
+
+on:
+  # Esegui ogni giorno alle 23:00 UTC (01:00 ora italiana)
+  schedule:
+    - cron: '0 23 * * *'
+
+  # Permetti esecuzione manuale
+  workflow_dispatch:
+
+jobs:
+  download-and-upload:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r backend/requirements.txt
+
+      - name: Install Chrome
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Create credentials.json from secret
+        run: |
+          echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
+
+      - name: Run iPratico bot for all locales
+        env:
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+        run: |
+          python run_bot.py
+
+      - name: Commit updated database (logs)
+        if: always()
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/locali.db
+          git diff --quiet && git diff --staged --quiet || git commit -m "Update execution logs [skip ci]"
+          git push || true
+
+      - name: Clean up credentials
+        if: always()
+        run: |
+          rm -f credentials.json
+          rm -f downloads/*.xls

@@ -1,0 +1,39 @@
+{
+  "dashboard": {
+    "base_url": "https://www.ipraticocloud.com",
+    "login_url": "https://www.ipraticocloud.com/it/auth/login",
+    "after_login_url": "https://www.ipraticocloud.com/it/locale"
+  },
+  "selectors": {
+    "username_field": "#loginForm > div:nth-child(3) > div input",
+    "password_field": "#loginForm > div:nth-child(4) > div input",
+    "login_button": "#loginForm > div.row.submit-row > div button",
+    "secret_popup_trigger": "#wrapper > div.content-page > footer > div",
+    "secret_pin_field": "#modal-training > div.modal-dialog > div > div.modal-body > div input",
+    "secret_pin_confirm": "#modal-training > div.modal-dialog > div > div.modal-footer > button.btn.btn-success.btn-attiva-pin",
+    "menu_main": "#sidebar-menu > ul > li:nth-child(1) > a",
+    "menu_submenu": "#sidebar-menu > ul > li:nth-child(1) > ul > li:nth-child(9) > a",
+    "locale_dropdown_button": "#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(1) > div > button",
+    "date_filter_trigger": "#filtro-data",
+    "date_start_input": "body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.calendar.left > div.daterangepicker_input > input",
+    "date_end_input": "body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.calendar.right > div.daterangepicker_input > input",
+    "date_apply_button": "body > div.daterangepicker.dropdown-menu.ltr.show-calendar.opensright > div.ranges > div > button.applyBtn.btn.btn-sm.btn-success",
+    "aggiornamento_dati_button": "#wrapper > div.content-page > div > div:nth-child(3) > div > div > div > div:nth-child(4) > button",
+    "download_xlsx_button": "#ToolTables_employeeProductOrdered_0"
+  },
+  "navigation": {
+    "wait_after_login": 5,
+    "wait_after_pin": 2,
+    "wait_after_menu_click": 2,
+    "wait_after_locale_select": 2,
+    "wait_after_date_select": 2,
+    "wait_after_aggiornamento": 3,
+    "wait_for_download": 10,
+    "max_retries": 3,
+    "secret_popup_clicks": 3
+  },
+  "google_sheets": {
+    "worksheet_name": "Dati iPratico",
+    "clear_existing": true
+  }
+}

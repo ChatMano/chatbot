@@ -1,0 +1,79 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+
+# Environment variables
+.env
+
+# Credentials
+credentials.json
+token.json
+
+# Downloaded files
+downloads/
+*.xlsx
+*.xls
+
+# Selenium
+*.log
+chromedriver
+geckodriver
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Config files with sensitive data
+config_private.json
+
+# Node modules
+node_modules/
+package-lock.json
+
+# Frontend build
+frontend/dist/
+frontend/.vite/
+
+# Database
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Service Account
+service-account.json
+
+# Backend logs
+backend/*.log
