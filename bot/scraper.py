@@ -454,25 +454,47 @@ class DashboardScraper:
 
             # Aspetta che il file sia completamente scaricato
             print("Attesa completamento download...")
-            max_wait_complete = 30  # Massimo 30 secondi per completare
-            last_size = -1
-            stable_count = 0
+            max_wait_complete = 60  # Massimo 60 secondi per completare
 
-            for i in range(max_wait_complete):
-                time.sleep(1)
-                try:
-                    current_size = os.path.getsize(downloaded_file)
-                    if current_size == last_size:
-                        stable_count += 1
-                        if stable_count >= 3:  # 3 secondi senza cambiamenti
-                            print(f"✓ Download completato ({current_size} bytes)")
-                            break
-                    else:
-                        stable_count = 0
-                        last_size = current_size
-                        print(f"  Download in corso... ({current_size} bytes)")
-                except:
-                    pass
+            # Se il file è .crdownload, aspetta che Chrome lo rinomini
+            if downloaded_file.endswith('.crdownload'):
+                print("  File temporaneo .crdownload rilevato, attesa completamento...")
+                for i in range(max_wait_complete):
+                    time.sleep(1)
+                    # Cerca il file senza .crdownload
+                    possible_file = downloaded_file.replace('.crdownload', '')
+                    if os.path.exists(possible_file):
+                        downloaded_file = possible_file
+                        print(f"✓ Download completato: {os.path.basename(downloaded_file)}")
+                        break
+                    # Controlla anche se ci sono nuovi file .xls o .xlsx
+                    after_files = set(glob.glob(os.path.join(download_path, "*.xls*")))
+                    new_xlsx = after_files - before_files
+                    if new_xlsx:
+                        downloaded_file = list(new_xlsx)[0]
+                        print(f"✓ File Excel trovato: {os.path.basename(downloaded_file)}")
+                        break
+                else:
+                    print("⚠ Timeout: il file .crdownload non è stato completato")
+            else:
+                # File normale, aspetta che la dimensione si stabilizzi
+                last_size = -1
+                stable_count = 0
+                for i in range(max_wait_complete):
+                    time.sleep(1)
+                    try:
+                        current_size = os.path.getsize(downloaded_file)
+                        if current_size == last_size:
+                            stable_count += 1
+                            if stable_count >= 3:  # 3 secondi senza cambiamenti
+                                print(f"✓ Download completato ({current_size} bytes)")
+                                break
+                        else:
+                            stable_count = 0
+                            last_size = current_size
+                            print(f"  Download in corso... ({current_size} bytes)")
+                    except:
+                        pass
 
             # Verifica che il file HTML sia completo (se è HTML)
             try:
