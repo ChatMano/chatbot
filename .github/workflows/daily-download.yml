@@ -27,15 +27,14 @@ jobs:
           pip install -r requirements.txt
           pip install -r backend/requirements.txt
 
-      - name: Install Chrome
-        uses: browser-actions/setup-chrome@v1
-        with:
-          chrome-version: stable
-
-      - name: Install ChromeDriver
-        uses: browser-actions/setup-chromedriver@v1
-        with:
-          chromedriver-version: 'latest'
+      - name: Install Chrome and ChromeDriver
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser chromium-chromedriver
+          which chromium-browser
+          which chromedriver
+          chromium-browser --version
+          chromedriver --version
 
       - name: Create credentials.json from secret
         run: |
