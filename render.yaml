@@ -2,6 +2,7 @@ services:
   - type: web
     name: pratico-backend
     env: python
+    runtime: python
     region: frankfurt
     plan: free
     buildCommand: "cd backend && pip install -r requirements.txt"
@@ -10,8 +11,6 @@ services:
       - key: ENCRYPTION_KEY
         sync: false  # Configureremo manualmente
       - key: DATABASE_URL
-        value: sqlite:///locali.db
-      - key: PYTHON_VERSION
-        value: 3.11.0
+        sync: false  # Configureremo manualmente (PostgreSQL URL)
       - key: FLASK_ENV
         value: production
