@@ -5,8 +5,13 @@ on:
   schedule:
     - cron: '0 * * * *'  # Ogni ora esatta (00:00, 01:00, 02:00, ecc.)
 
-  # Permetti esecuzione manuale
+  # Permetti esecuzione manuale con selezione locale
   workflow_dispatch:
+    inputs:
+      locale_id:
+        description: 'ID del locale da eseguire (lascia vuoto per tutti)'
+        required: false
+        type: string
 
 jobs:
   download-and-upload:
@@ -45,6 +50,7 @@ jobs:
       - name: Run iPratico bot for all locales
         env:
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
+          LOCALE_ID: ${{ github.event.inputs.locale_id }}
         run: |
           python run_bot.py
 
