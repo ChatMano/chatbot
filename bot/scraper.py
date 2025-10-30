@@ -53,8 +53,11 @@ class DashboardScraper:
         }
         chrome_options.add_experimental_option("prefs", prefs)
 
-        # Modalità headless se configurata
-        if self.config.is_headless_mode():
+        # Modalità headless - usa la nuova modalità su GitHub Actions
+        if os.getenv('GITHUB_ACTIONS'):
+            chrome_options.add_argument("--headless=new")
+            print("Modalità headless (new) attivata per GitHub Actions")
+        elif self.config.is_headless_mode():
             chrome_options.add_argument("--headless")
             print("Modalità headless attivata")
 
@@ -67,15 +70,16 @@ class DashboardScraper:
 
         # Opzioni aggiuntive per GitHub Actions
         if os.getenv('GITHUB_ACTIONS'):
-            import tempfile
-            import uuid
-            # Crea una directory temporanea unica per questa esecuzione
-            temp_user_data = os.path.join(tempfile.gettempdir(), f'chrome-user-data-{uuid.uuid4()}')
-            chrome_options.add_argument(f"--user-data-dir={temp_user_data}")
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--disable-extensions")
-            chrome_options.add_argument("--disable-software-rasterizer")
-            chrome_options.add_argument("--remote-debugging-port=9222")
+            chrome_options.add_argument("--no-first-run")
+            chrome_options.add_argument("--no-default-browser-check")
+            chrome_options.add_argument("--disable-background-networking")
+            chrome_options.add_argument("--disable-background-timer-throttling")
+            chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+            chrome_options.add_argument("--disable-breakpad")
+            chrome_options.add_argument("--disable-component-extensions-with-background-pages")
+            chrome_options.add_argument("--disable-features=TranslateUI,BlinkGenPropertyTrees")
 
         # Inizializza il driver
         if os.getenv('GITHUB_ACTIONS'):
