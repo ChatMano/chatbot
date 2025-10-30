@@ -1,9 +1,9 @@
 name: iPratico Daily Download
 
 on:
-  # TEST: Esegui alle 10:25 UTC (11:25 ora italiana) - POI RIPRISTINARE 3 AM
+  # TEST: Esegui alle 09:30 UTC (10:30 ora italiana) - POI RIPRISTINARE 3 AM
   schedule:
-    - cron: '25 10 * * *'
+    - cron: '30 9 * * *'
 
   # Permetti esecuzione manuale
   workflow_dispatch:
