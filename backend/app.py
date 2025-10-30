@@ -2,10 +2,7 @@
 Backend Flask API per la gestione dei locali
 """
 import os
-import sys
-import subprocess
 import requests
-from pathlib import Path
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -240,7 +237,7 @@ def _trigger_github_workflow(api_url: str, payload: dict, headers: dict):
 
 @app.route('/api/locali/<int:locale_id>/esegui-ora', methods=['POST'])
 def esegui_locale_ora(locale_id):
-    """Esegue immediatamente il bot per un locale specifico"""
+    """Imposta il flag per esecuzione immediata del bot (verrà eseguito da GitHub Actions)"""
     try:
         locale = Locale.query.get_or_404(locale_id)
 
@@ -254,62 +251,20 @@ def esegui_locale_ora(locale_id):
         db.session.commit()
 
         print(f"🚀 Esecuzione manuale richiesta per locale {locale_id} ({locale.nome})")
+        print(f"   Flag 'esegui_ora' impostato - il bot verrà eseguito al prossimo ciclo")
 
-        # Trova il path di run_bot.py (nella root del progetto)
-        backend_dir = Path(__file__).parent
-        project_root = backend_dir.parent
-        run_bot_path = project_root / 'run_bot.py'
-
-        if not run_bot_path.exists():
-            return jsonify({
-                'error': f'Script run_bot.py non trovato in {run_bot_path}'
-            }), 500
-
-        # Prepara le variabili d'ambiente per il subprocess
-        env = os.environ.copy()
-        env['LOCALE_ID'] = str(locale_id)
-
-        # Assicurati che ENCRYPTION_KEY sia presente
-        if 'ENCRYPTION_KEY' not in env:
-            return jsonify({
-                'error': 'ENCRYPTION_KEY non configurata. Configura la variabile d\'ambiente nel backend.'
-            }), 500
-
-        # Esegui il bot in background (non blocca la risposta HTTP)
-        print(f"  Esecuzione comando: python {run_bot_path}")
-        print(f"  Variabili d'ambiente: LOCALE_ID={locale_id}")
-
-        process = subprocess.Popen(
-            [sys.executable, str(run_bot_path)],
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            cwd=str(project_root),
-            start_new_session=True  # Detach dal processo parent
-        )
-
-        print(f"  ✓ Processo avviato con PID: {process.pid}")
-
-        # Ritorna immediatamente la risposta all'utente
+        # Ritorna messaggio di conferma
         return jsonify({
             'success': True,
-            'message': f'🚀 Bot avviato per {locale.nome}!\n\nIl processo è partito in background. Controlla i log per seguire l\'avanzamento.',
-            'process_id': process.pid
+            'message': f'✅ Richiesta ricevuta per {locale.nome}!\n\nIl bot verrà eseguito entro la prossima ora dal workflow automatico.'
         }), 200
 
     except Exception as e:
-        # Resetta il flag in caso di errore
-        try:
-            locale.esegui_ora = False
-            db.session.commit()
-        except:
-            pass
-
-        print(f"❌ Errore durante l'avvio del bot: {e}")
+        print(f"❌ Errore durante l'impostazione del flag: {e}")
         import traceback
         traceback.print_exc()
 
-        return jsonify({'error': f'Errore nell\'avvio del bot: {str(e)}'}), 500
+        return jsonify({'error': f'Errore: {str(e)}'}), 500
 
 
 @app.route('/api/locali/<int:locale_id>/log', methods=['POST'])
