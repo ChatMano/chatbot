@@ -19,16 +19,24 @@ app = Flask(__name__)
 CORS(app)  # Abilita CORS per React
 
 # Configurazione
-# Costruisci il path assoluto del database
+# Costruisci il path assoluto del database SQLite (fallback per sviluppo locale)
 basedir = os.path.abspath(os.path.dirname(__file__))
 db_path = os.path.join(os.path.dirname(basedir), 'data', 'locali.db')
 
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
-    'DATABASE_URL',
-    f'sqlite:///{db_path}'
-)
+# Ottieni DATABASE_URL da environment (PostgreSQL su Render, SQLite in locale)
+database_url = os.getenv('DATABASE_URL', f'sqlite:///{db_path}')
+
+# Fix per Render: converte postgres:// in postgresql://
+# (Render usa postgres:// ma SQLAlchemy 1.4+ richiede postgresql://)
+if database_url.startswith('postgres://'):
+    database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'change-me-in-production')
+
+# Log database type per debug
+print(f"Database type: {'PostgreSQL' if 'postgresql://' in database_url else 'SQLite'}")
 
 # Inizializza database
 db.init_app(app)
