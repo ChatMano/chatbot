@@ -67,6 +67,11 @@ class DashboardScraper:
 
         # Opzioni aggiuntive per GitHub Actions
         if os.getenv('GITHUB_ACTIONS'):
+            import tempfile
+            import uuid
+            # Crea una directory temporanea unica per questa esecuzione
+            temp_user_data = os.path.join(tempfile.gettempdir(), f'chrome-user-data-{uuid.uuid4()}')
+            chrome_options.add_argument(f"--user-data-dir={temp_user_data}")
             chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--disable-extensions")
             chrome_options.add_argument("--disable-software-rasterizer")
