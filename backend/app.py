@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 
 from models import db, Locale, LocaleLog
 from crypto import CryptoManager
+from retry_utils import retry_request
 
 # Carica variabili d'ambiente
 load_dotenv()
@@ -215,6 +216,25 @@ def get_locale_logs(locale_id):
         return jsonify({'error': str(e)}), 500
 
 
+def _trigger_github_workflow(api_url: str, payload: dict, headers: dict):
+    """
+    Helper function per chiamare GitHub Actions API con retry automatico
+
+    Args:
+        api_url: URL dell'API GitHub
+        payload: Payload JSON da inviare
+        headers: Headers HTTP
+
+    Returns:
+        Response object di requests
+    """
+    @retry_request(max_retries=3, initial_delay=2.0)
+    def _make_request():
+        return requests.post(api_url, json=payload, headers=headers, timeout=15)
+
+    return _make_request()
+
+
 @app.route('/api/locali/<int:locale_id>/esegui-ora', methods=['POST'])
 def esegui_locale_ora(locale_id):
     """Triggera immediatamente l'esecuzione di un locale via GitHub Actions"""
@@ -246,8 +266,9 @@ def esegui_locale_ora(locale_id):
             }
         }
 
-        # Chiama l'API GitHub per triggerare il workflow
-        response = requests.post(api_url, json=payload, headers=headers, timeout=10)
+        # Chiama l'API GitHub per triggerare il workflow (con retry automatico)
+        print(f"Triggering GitHub workflow for locale {locale_id}...")
+        response = _trigger_github_workflow(api_url, payload, headers)
 
         if response.status_code == 204:
             # Successo - il workflow è stato triggerato

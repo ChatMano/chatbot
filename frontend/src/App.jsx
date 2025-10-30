@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import axios, { API_URL } from './utils/axiosConfig'
 import LocaleList from './components/LocaleList'
 import LocaleForm from './components/LocaleForm'
-
-const API_URL = import.meta.env.VITE_API_URL || '/api'
 
 function App() {
   const [locali, setLocali] = useState([])
