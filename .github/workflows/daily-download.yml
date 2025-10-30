@@ -32,6 +32,11 @@ jobs:
         with:
           chrome-version: stable
 
+      - name: Install ChromeDriver
+        uses: browser-actions/setup-chromedriver@v1
+        with:
+          chromedriver-version: 'latest'
+
       - name: Create credentials.json from secret
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
