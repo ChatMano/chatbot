@@ -47,25 +47,13 @@ jobs:
         run: |
           echo '${{ secrets.GOOGLE_CREDENTIALS_JSON }}' > credentials.json
 
-      - name: Migrate database (add esegui_ora column if missing)
-        run: |
-          python migrate_db.py
-
       - name: Run iPratico bot for all locales
         env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
           LOCALE_ID: ${{ github.event.inputs.locale_id }}
         run: |
           python run_bot.py
-
-      - name: Commit updated database (logs)
-        if: always()
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add data/locali.db
-          git diff --quiet && git diff --staged --quiet || git commit -m "Update execution logs [skip ci]"
-          git push || true
 
       - name: Clean up credentials
         if: always()

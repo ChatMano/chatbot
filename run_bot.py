@@ -20,16 +20,29 @@ from bot.google_sheets import GoogleSheetsUploader
 
 
 def setup_database():
-    """Setup del database SQLite"""
+    """Setup del database (PostgreSQL su produzione, SQLite in locale)"""
     from flask import Flask
 
     app = Flask(__name__)
 
-    # Percorso assoluto al database
-    db_path = Path(__file__).parent / 'data' / 'locali.db'
-    db_path.parent.mkdir(exist_ok=True)
+    # Leggi DATABASE_URL da variabile d'ambiente (se presente, usa PostgreSQL)
+    database_url = os.getenv('DATABASE_URL')
 
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+    if database_url:
+        # PostgreSQL su Render/GitHub Actions
+        # Fix: Render usa postgres:// ma SQLAlchemy richiede postgresql://
+        if database_url.startswith('postgres://'):
+            database_url = database_url.replace('postgres://', 'postgresql://', 1)
+
+        app.config['SQLALCHEMY_DATABASE_URI'] = database_url
+        print(f"✓ Using PostgreSQL database")
+    else:
+        # SQLite locale per sviluppo
+        db_path = Path(__file__).parent / 'data' / 'locali.db'
+        db_path.parent.mkdir(exist_ok=True)
+        app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path}'
+        print(f"✓ Using SQLite database: {db_path}")
+
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
@@ -72,15 +85,21 @@ def should_run_locale(locale, app) -> bool:
 
     # Verifica se è già stato eseguito oggi con successo
     with app.app_context():
-        today_start = now_italy.replace(hour=0, minute=0, second=0, microsecond=0)
+        # Converti midnight Italy time a UTC per confronto corretto
+        today_start_italy = now_italy.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_start_utc = today_start_italy.astimezone(pytz.UTC).replace(tzinfo=None)
+
         last_log = LocaleLog.query.filter(
             LocaleLog.locale_id == locale.id,
-            LocaleLog.eseguito_at >= today_start.replace(tzinfo=None),
+            LocaleLog.eseguito_at >= today_start_utc,
             LocaleLog.successo == True
         ).first()
 
         if last_log:
-            print(f"  ⏭️  Locale già eseguito oggi alle {last_log.eseguito_at.strftime('%H:%M')}")
+            # Converti a Italy time per il messaggio
+            log_time_utc = last_log.eseguito_at.replace(tzinfo=pytz.UTC)
+            log_time_italy = log_time_utc.astimezone(italy_tz)
+            print(f"  ⏭️  Locale già eseguito oggi alle {log_time_italy.strftime('%H:%M')} (ora italiana)")
             return False
 
     return True
